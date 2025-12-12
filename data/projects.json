@@ -1,0 +1,141 @@
+[
+  {
+    "id": "proj-001",
+    "name": "ECサイトリニューアル",
+    "framework": "React + TypeScript",
+    "date": "2024-01-15",
+    "assignee": "田中太郎",
+    "ciResults": [
+      {
+        "timestamp": "2024-01-20T10:30:00.000Z",
+        "status": "pass",
+        "lintResult": {
+          "passed": true,
+          "errorCount": 0,
+          "warningCount": 3
+        },
+        "contractTestResult": {
+          "passed": true,
+          "totalTests": 25,
+          "passedTests": 25
+        },
+        "coverage": {
+          "percentage": 85,
+          "lines": 1200,
+          "coveredLines": 1020
+        },
+        "sbomStatus": "generated",
+        "logUrl": "https://ci.example.com/builds/12345"
+      },
+      {
+        "timestamp": "2024-01-22T14:15:00.000Z",
+        "status": "fail",
+        "lintResult": {
+          "passed": false,
+          "errorCount": 2,
+          "warningCount": 5
+        },
+        "contractTestResult": {
+          "passed": true,
+          "totalTests": 27,
+          "passedTests": 27
+        },
+        "coverage": {
+          "percentage": 82,
+          "lines": 1250,
+          "coveredLines": 1025
+        },
+        "sbomStatus": "error",
+        "logUrl": "https://ci.example.com/builds/12346"
+      }
+    ],
+    "effectMetrics": {
+      "efficiency": {
+        "taskCompletionRate": 92,
+        "avgTaskDurationHours": 4.5
+      },
+      "quality": {
+        "preImplFindingsCount": 15,
+        "postImplFindingsCount": 3,
+        "highSeverityCount": 1,
+        "ciSuccessRate": 88
+      },
+      "humanEffort": {
+        "manualFixCount": 2,
+        "reviewEffortHours": 12
+      },
+      "handoffAccuracy": {
+        "requirementsChangeCount": 1,
+        "designChangeCount": 0,
+        "specAmbiguityCount": 2
+      },
+      "comments": "仕様駆動開発により、実装後の指摘が大幅に減少した。特にAPIの契約テストが効果的だった。"
+    },
+    "createdAt": "2024-01-15T09:00:00.000Z",
+    "updatedAt": "2024-01-22T14:15:00.000Z"
+  },
+  {
+    "id": "proj-002",
+    "name": "在庫管理システム",
+    "framework": "Vue.js + Nuxt.js",
+    "date": "2024-02-01",
+    "assignee": "佐藤花子",
+    "ciResults": [
+      {
+        "timestamp": "2024-02-05T11:00:00.000Z",
+        "status": "pass",
+        "lintResult": {
+          "passed": true,
+          "errorCount": 0,
+          "warningCount": 1
+        },
+        "contractTestResult": {
+          "passed": true,
+          "totalTests": 18,
+          "passedTests": 18
+        },
+        "coverage": {
+          "percentage": 91,
+          "lines": 800,
+          "coveredLines": 728
+        },
+        "sbomStatus": "generated",
+        "logUrl": "https://ci.example.com/builds/12347"
+      }
+    ],
+    "effectMetrics": {
+      "efficiency": {
+        "taskCompletionRate": 95,
+        "avgTaskDurationHours": 3.2
+      },
+      "quality": {
+        "preImplFindingsCount": 8,
+        "postImplFindingsCount": 1,
+        "highSeverityCount": 0,
+        "ciSuccessRate": 100
+      },
+      "humanEffort": {
+        "manualFixCount": 0,
+        "reviewEffortHours": 6
+      },
+      "handoffAccuracy": {
+        "requirementsChangeCount": 0,
+        "designChangeCount": 1,
+        "specAmbiguityCount": 0
+      },
+      "comments": "小規模プロジェクトだが、仕様駆動開発の効果が顕著に現れた。"
+    },
+    "createdAt": "2024-02-01T10:00:00.000Z",
+    "updatedAt": "2024-02-05T11:00:00.000Z"
+  },
+  {
+    "id": "proj-003",
+    "name": "ユーザー認証API",
+    "framework": "Node.js + Express",
+    "date": "2024-03-10",
+    "assignee": "山田次郎",
+    "ciResults": [],
+    "createdAt": "2024-03-10T08:30:00.000Z",
+    "updatedAt": "2024-03-10T08:30:00.000Z"
+  }
+]

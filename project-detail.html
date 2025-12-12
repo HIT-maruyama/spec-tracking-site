@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロジェクト詳細 - 仕様駆動開発管理サイト</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>仕様駆動開発管理サイト</h1>
+        <nav>
+            <a href="index.html" class="btn btn-secondary">一覧に戻る</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- プロジェクト情報セクション -->
+        <section id="project-info-section">
+            <div class="project-header">
+                <h2 id="project-title">プロジェクト詳細</h2>
+                <div class="project-actions">
+                    <button id="edit-project-btn" class="btn btn-primary">編集</button>
+                    <button id="delete-project-btn" class="btn btn-danger">削除</button>
+                </div>
+            </div>
+            
+            <div id="project-info" class="project-info">
+                <!-- プロジェクト情報がここに動的に挿入される -->
+            </div>
+        </section>
+
+        <!-- タブナビゲーション -->
+        <section id="tabs-section">
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="ci-results">CI結果</button>
+                <button class="tab-btn" data-tab="review-findings">レビュー指摘</button>
+                <button class="tab-btn" data-tab="effect-metrics">効果メトリクス</button>
+            </div>
+
+            <!-- CI結果タブ -->
+            <div id="ci-results-tab" class="tab-content active">
+                <div class="tab-header">
+                    <h3>CI結果</h3>
+                    <button id="add-ci-result-btn" class="btn btn-primary">CI結果追加</button>
+                </div>
+                <div id="ci-results-container">
+                    <!-- CI結果がここに動的に挿入される -->
+                </div>
+            </div>
+
+            <!-- レビュー指摘タブ -->
+            <div id="review-findings-tab" class="tab-content">
+                <div class="tab-header">
+                    <h3>レビュー指摘</h3>
+                    <button id="add-review-finding-btn" class="btn btn-primary">レビュー指摘追加</button>
+                </div>
+                
+                <!-- フィルタ・ソートコントロール -->
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="filter-process">プロセス:</label>
+                        <select id="filter-process" multiple>
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-doc-type">ドキュメント種別:</label>
+                        <select id="filter-doc-type" multiple>
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-category">カテゴリ:</label>
+                        <select id="filter-category" multiple>
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-severity">重要度:</label>
+                        <select id="filter-severity" multiple>
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-status">ステータス:</label>
+                        <select id="filter-status" multiple>
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+                    <button id="clear-filters-btn" class="btn btn-secondary">フィルタクリア</button>
+                </div>
+
+                <div id="review-findings-container">
+                    <!-- レビュー指摘テーブルがここに動的に挿入される -->
+                </div>
+            </div>
+
+            <!-- 効果メトリクスタブ -->
+            <div id="effect-metrics-tab" class="tab-content">
+                <div class="tab-header">
+                    <h3>効果メトリクス</h3>
+                    <button id="edit-effect-metrics-btn" class="btn btn-primary">編集</button>
+                </div>
+                <div id="effect-metrics-container">
+                    <!-- 効果メトリクスがここに動的に挿入される -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- プロジェクト編集モーダル -->
+    <div id="edit-project-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>プロジェクト編集</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="edit-project-form">
+                <div class="form-group">
+                    <label for="edit-project-name">プロジェクト名 <span class="required">*</span></label>
+                    <input type="text" id="edit-project-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-project-framework">フレームワーク種別 <span class="required">*</span></label>
+                    <input type="text" id="edit-project-framework" name="framework" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-project-date">日付 <span class="required">*</span></label>
+                    <input type="date" id="edit-project-date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-project-assignee">担当者</label>
+                    <input type="text" id="edit-project-assignee" name="assignee">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-project">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div id="delete-confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>削除確認</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>このプロジェクトを削除しますか？この操作は取り消せません。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-delete">キャンセル</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CI結果追加モーダル -->
+    <div id="add-ci-result-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>CI結果追加</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="add-ci-result-form">
+                <div class="form-group">
+                    <label for="ci-status">合否ステータス <span class="required">*</span></label>
+                    <select id="ci-status" name="status" required>
+                        <option value="">選択してください</option>
+                        <option value="pass">成功 (pass)</option>
+                        <option value="fail">失敗 (fail)</option>
+                    </select>
+                </div>
+                
+                <!-- Lint結果 -->
+                <fieldset class="form-group">
+                    <legend>Lint結果</legend>
+                    <div class="form-group">
+                        <label for="lint-passed">Lint通過</label>
+                        <select id="lint-passed" name="lintPassed">
+                            <option value="">未設定</option>
+                            <option value="true">通過</option>
+                            <option value="false">失敗</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lint-error-count">エラー数</label>
+                        <input type="number" id="lint-error-count" name="lintErrorCount" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="lint-warning-count">警告数</label>
+                        <input type="number" id="lint-warning-count" name="lintWarningCount" min="0">
+                    </div>
+                </fieldset>
+                
+                <!-- 契約テスト結果 -->
+                <fieldset class="form-group">
+                    <legend>契約テスト結果</legend>
+                    <div class="form-group">
+                        <label for="contract-test-passed">契約テスト通過</label>
+                        <select id="contract-test-passed" name="contractTestPassed">
+                            <option value="">未設定</option>
+                            <option value="true">通過</option>
+                            <option value="false">失敗</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contract-test-total">総テスト数</label>
+                        <input type="number" id="contract-test-total" name="contractTestTotal" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="contract-test-passed-count">通過テスト数</label>
+                        <input type="number" id="contract-test-passed-count" name="contractTestPassedCount" min="0">
+                    </div>
+                </fieldset>
+                
+                <!-- カバレッジ情報 -->
+                <fieldset class="form-group">
+                    <legend>カバレッジ情報</legend>
+                    <div class="form-group">
+                        <label for="coverage-percentage">カバレッジ率 (%)</label>
+                        <input type="number" id="coverage-percentage" name="coveragePercentage" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="coverage-lines">総行数</label>
+                        <input type="number" id="coverage-lines" name="coverageLines" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="coverage-covered-lines">カバー済み行数</label>
+                        <input type="number" id="coverage-covered-lines" name="coverageCoveredLines" min="0">
+                    </div>
+                </fieldset>
+                
+                <div class="form-group">
+                    <label for="sbom-status">SBOMステータス</label>
+                    <select id="sbom-status" name="sbomStatus">
+                        <option value="">未設定</option>
+                        <option value="generated">生成済み</option>
+                        <option value="not_generated">未生成</option>
+                        <option value="error">エラー</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="log-url">ログURL</label>
+                    <input type="url" id="log-url" name="logUrl" placeholder="https://example.com/ci-log">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-add-ci-result">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CI結果削除確認モーダル -->
+    <div id="delete-ci-result-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>CI結果削除確認</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>このCI結果を削除しますか？この操作は取り消せません。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-ci-result">キャンセル</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-ci-result">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- レビュー指摘追加モーダル -->
+    <div id="add-review-finding-modal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>レビュー指摘追加</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="add-review-finding-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="review-process">プロセス <span class="required">*</span></label>
+                        <select id="review-process" name="process" required>
+                            <option value="">選択してください</option>
+                            <option value="planning">計画 (planning)</option>
+                            <option value="design">設計 (design)</option>
+                            <option value="implementation">実装 (implementation)</option>
+                            <option value="testing">テスト (testing)</option>
+                            <option value="documentation">文書化 (documentation)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="review-doc-type">ドキュメント種別 <span class="required">*</span></label>
+                        <select id="review-doc-type" name="docType" required>
+                            <option value="">選択してください</option>
+                            <optgroup label="ドキュメント">
+                                <option value="spec">仕様書 (spec)</option>
+                                <option value="plan">計画書 (plan)</option>
+                                <option value="design_doc">設計書 (design_doc)</option>
+                                <option value="tasks">タスク (tasks)</option>
+                                <option value="api_contract">API契約 (api_contract)</option>
+                                <option value="test_case">テストケース (test_case)</option>
+                                <option value="user_docs">ユーザー文書 (user_docs)</option>
+                            </optgroup>
+                            <optgroup label="コード/アセット">
+                                <option value="source_code">ソースコード (source_code)</option>
+                                <option value="build_script">ビルドスクリプト (build_script)</option>
+                                <option value="infra_config">インフラ設定 (infra_config)</option>
+                                <option value="ci_pipeline">CIパイプライン (ci_pipeline)</option>
+                                <option value="test_code">テストコード (test_code)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="review-category">カテゴリ <span class="required">*</span></label>
+                        <select id="review-category" name="category" required>
+                            <option value="">選択してください</option>
+                            <option value="requirements_gap">要件ギャップ (requirements_gap)</option>
+                            <option value="spec_inconsistency">仕様不整合 (spec_inconsistency)</option>
+                            <option value="design_flaw">設計欠陥 (design_flaw)</option>
+                            <option value="implementation_bug">実装バグ (implementation_bug)</option>
+                            <option value="security_issue">セキュリティ問題 (security_issue)</option>
+                            <option value="performance_issue">パフォーマンス問題 (performance_issue)</option>
+                            <option value="style_violation">スタイル違反 (style_violation)</option>
+                            <option value="test_deficiency">テスト不備 (test_deficiency)</option>
+                            <option value="test_error">テストエラー (test_error)</option>
+                            <option value="doc_deficiency">文書不備 (doc_deficiency)</option>
+                            <option value="doc_error">文書エラー (doc_error)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="review-root-cause">根本原因 <span class="required">*</span></label>
+                        <select id="review-root-cause" name="rootCause" required>
+                            <option value="">選択してください</option>
+                            <option value="spec_omission">仕様漏れ (spec_omission)</option>
+                            <option value="design_decision_error">設計判断ミス (design_decision_error)</option>
+                            <option value="implementation_bug">実装バグ (implementation_bug)</option>
+                            <option value="test_deficiency">テスト不備 (test_deficiency)</option>
+                            <option value="doc_deficiency">文書不備 (doc_deficiency)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="review-severity">重要度 <span class="required">*</span></label>
+                        <select id="review-severity" name="severity" required>
+                            <option value="">選択してください</option>
+                            <option value="high">高 (high)</option>
+                            <option value="medium">中 (medium)</option>
+                            <option value="low">低 (low)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="review-status">ステータス <span class="required">*</span></label>
+                        <select id="review-status" name="status" required>
+                            <option value="">選択してください</option>
+                            <option value="Open">未対応 (Open)</option>
+                            <option value="InProgress">対応中 (InProgress)</option>
+                            <option value="Resolved">解決済み (Resolved)</option>
+                            <option value="Verified">検証済み (Verified)</option>
+                            <option value="Deferred">延期 (Deferred)</option>
+                            <option value="Rejected">却下 (Rejected)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="review-description">指摘内容 <span class="required">*</span></label>
+                    <textarea id="review-description" name="description" rows="4" required 
+                              placeholder="具体的な指摘内容を記述してください"></textarea>
+                </div>
+                
+                <fieldset class="form-group">
+                    <legend>ドキュメント参照 <span class="required">*</span></legend>
+                    <div class="form-group">
+                        <label for="review-doc-path">ファイルパス <span class="required">*</span></label>
+                        <input type="text" id="review-doc-path" name="docPath" required 
+                               placeholder="例: src/components/Button.tsx">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="review-doc-lines">行番号</label>
+                            <input type="text" id="review-doc-lines" name="docLines" 
+                                   placeholder="例: 42 または 10-15">
+                        </div>
+                        <div class="form-group">
+                            <label for="review-doc-section">セクションID</label>
+                            <input type="text" id="review-doc-section" name="docSection" 
+                                   placeholder="例: #user-authentication">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="review-reviewer">レビュアー</label>
+                        <input type="text" id="review-reviewer" name="reviewer" 
+                               placeholder="レビューを行った人の名前">
+                    </div>
+                    <div class="form-group">
+                        <label for="review-assignee">担当者</label>
+                        <input type="text" id="review-assignee" name="assignee" 
+                               placeholder="対応担当者の名前">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-add-review-finding">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- レビュー指摘編集モーダル -->
+    <div id="edit-review-finding-modal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>レビュー指摘編集</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="edit-review-finding-form">
+                <input type="hidden" id="edit-review-finding-id" name="id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-review-process">プロセス <span class="required">*</span></label>
+                        <select id="edit-review-process" name="process" required>
+                            <option value="">選択してください</option>
+                            <option value="planning">計画 (planning)</option>
+                            <option value="design">設計 (design)</option>
+                            <option value="implementation">実装 (implementation)</option>
+                            <option value="testing">テスト (testing)</option>
+                            <option value="documentation">文書化 (documentation)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-review-doc-type">ドキュメント種別 <span class="required">*</span></label>
+                        <select id="edit-review-doc-type" name="docType" required>
+                            <option value="">選択してください</option>
+                            <optgroup label="ドキュメント">
+                                <option value="spec">仕様書 (spec)</option>
+                                <option value="plan">計画書 (plan)</option>
+                                <option value="design_doc">設計書 (design_doc)</option>
+                                <option value="tasks">タスク (tasks)</option>
+                                <option value="api_contract">API契約 (api_contract)</option>
+                                <option value="test_case">テストケース (test_case)</option>
+                                <option value="user_docs">ユーザー文書 (user_docs)</option>
+                            </optgroup>
+                            <optgroup label="コード/アセット">
+                                <option value="source_code">ソースコード (source_code)</option>
+                                <option value="build_script">ビルドスクリプト (build_script)</option>
+                                <option value="infra_config">インフラ設定 (infra_config)</option>
+                                <option value="ci_pipeline">CIパイプライン (ci_pipeline)</option>
+                                <option value="test_code">テストコード (test_code)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-review-category">カテゴリ <span class="required">*</span></label>
+                        <select id="edit-review-category" name="category" required>
+                            <option value="">選択してください</option>
+                            <option value="requirements_gap">要件ギャップ (requirements_gap)</option>
+                            <option value="spec_inconsistency">仕様不整合 (spec_inconsistency)</option>
+                            <option value="design_flaw">設計欠陥 (design_flaw)</option>
+                            <option value="implementation_bug">実装バグ (implementation_bug)</option>
+                            <option value="security_issue">セキュリティ問題 (security_issue)</option>
+                            <option value="performance_issue">パフォーマンス問題 (performance_issue)</option>
+                            <option value="style_violation">スタイル違反 (style_violation)</option>
+                            <option value="test_deficiency">テスト不備 (test_deficiency)</option>
+                            <option value="test_error">テストエラー (test_error)</option>
+                            <option value="doc_deficiency">文書不備 (doc_deficiency)</option>
+                            <option value="doc_error">文書エラー (doc_error)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-review-root-cause">根本原因 <span class="required">*</span></label>
+                        <select id="edit-review-root-cause" name="rootCause" required>
+                            <option value="">選択してください</option>
+                            <option value="spec_omission">仕様漏れ (spec_omission)</option>
+                            <option value="design_decision_error">設計判断ミス (design_decision_error)</option>
+                            <option value="implementation_bug">実装バグ (implementation_bug)</option>
+                            <option value="test_deficiency">テスト不備 (test_deficiency)</option>
+                            <option value="doc_deficiency">文書不備 (doc_deficiency)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-review-severity">重要度 <span class="required">*</span></label>
+                        <select id="edit-review-severity" name="severity" required>
+                            <option value="">選択してください</option>
+                            <option value="high">高 (high)</option>
+                            <option value="medium">中 (medium)</option>
+                            <option value="low">低 (low)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-review-status">ステータス <span class="required">*</span></label>
+                        <select id="edit-review-status" name="status" required>
+                            <option value="">選択してください</option>
+                            <option value="Open">未対応 (Open)</option>
+                            <option value="InProgress">対応中 (InProgress)</option>
+                            <option value="Resolved">解決済み (Resolved)</option>
+                            <option value="Verified">検証済み (Verified)</option>
+                            <option value="Deferred">延期 (Deferred)</option>
+                            <option value="Rejected">却下 (Rejected)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-review-description">指摘内容 <span class="required">*</span></label>
+                    <textarea id="edit-review-description" name="description" rows="4" required 
+                              placeholder="具体的な指摘内容を記述してください"></textarea>
+                </div>
+                
+                <fieldset class="form-group">
+                    <legend>ドキュメント参照 <span class="required">*</span></legend>
+                    <div class="form-group">
+                        <label for="edit-review-doc-path">ファイルパス <span class="required">*</span></label>
+                        <input type="text" id="edit-review-doc-path" name="docPath" required 
+                               placeholder="例: src/components/Button.tsx">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-review-doc-lines">行番号</label>
+                            <input type="text" id="edit-review-doc-lines" name="docLines" 
+                                   placeholder="例: 42 または 10-15">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-review-doc-section">セクションID</label>
+                            <input type="text" id="edit-review-doc-section" name="docSection" 
+                                   placeholder="例: #user-authentication">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-review-reviewer">レビュアー</label>
+                        <input type="text" id="edit-review-reviewer" name="reviewer" 
+                               placeholder="レビューを行った人の名前">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-review-assignee">担当者</label>
+                        <input type="text" id="edit-review-assignee" name="assignee" 
+                               placeholder="対応担当者の名前">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-review-finding">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- レビュー指摘削除確認モーダル -->
+    <div id="delete-review-finding-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>レビュー指摘削除確認</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>このレビュー指摘を削除しますか？この操作は取り消せません。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-review-finding">キャンセル</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-review-finding">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 効果メトリクス編集モーダル -->
+    <div id="edit-effect-metrics-modal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>効果メトリクス編集</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="edit-effect-metrics-form">
+                <input type="hidden" id="edit-effect-metrics-project-id" name="projectId">
+                
+                <!-- 効率性指標 -->
+                <fieldset class="form-group">
+                    <legend>効率性指標</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="task-completion-rate">タスク完了率 (%)</label>
+                            <input type="number" id="task-completion-rate" name="taskCompletionRate" 
+                                   min="0" max="100" step="0.1" placeholder="例: 85.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="avg-task-duration-hours">平均タスク所要時間 (時間)</label>
+                            <input type="number" id="avg-task-duration-hours" name="avgTaskDurationHours" 
+                                   min="0" step="0.1" placeholder="例: 2.5">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- 品質指標 -->
+                <fieldset class="form-group">
+                    <legend>品質指標</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pre-impl-findings-count">実装前レビュー指摘数</label>
+                            <input type="number" id="pre-impl-findings-count" name="preImplFindingsCount" 
+                                   min="0" step="1" placeholder="例: 5">
+                        </div>
+                        <div class="form-group">
+                            <label for="post-impl-findings-count">実装後レビュー指摘数</label>
+                            <input type="number" id="post-impl-findings-count" name="postImplFindingsCount" 
+                                   min="0" step="1" placeholder="例: 2">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="high-severity-count">重大度Highの指摘数</label>
+                            <input type="number" id="high-severity-count" name="highSeverityCount" 
+                                   min="0" step="1" placeholder="例: 1">
+                        </div>
+                        <div class="form-group">
+                            <label for="ci-success-rate">CI成功率 (%)</label>
+                            <input type="number" id="ci-success-rate" name="ciSuccessRate" 
+                                   min="0" max="100" step="0.1" placeholder="例: 95.0">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- 人間の手間指標 -->
+                <fieldset class="form-group">
+                    <legend>人間の手間指標</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="manual-fix-count">手動修正回数</label>
+                            <input type="number" id="manual-fix-count" name="manualFixCount" 
+                                   min="0" step="1" placeholder="例: 3">
+                        </div>
+                        <div class="form-group">
+                            <label for="review-effort-hours">レビュー工数 (時間)</label>
+                            <input type="number" id="review-effort-hours" name="reviewEffortHours" 
+                                   min="0" step="0.1" placeholder="例: 4.5">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- 引継ぎ正確性指標 -->
+                <fieldset class="form-group">
+                    <legend>引継ぎ正確性指標</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="requirements-change-count">要件変更回数</label>
+                            <input type="number" id="requirements-change-count" name="requirementsChangeCount" 
+                                   min="0" step="1" placeholder="例: 2">
+                        </div>
+                        <div class="form-group">
+                            <label for="design-change-count">設計変更回数</label>
+                            <input type="number" id="design-change-count" name="designChangeCount" 
+                                   min="0" step="1" placeholder="例: 1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="spec-ambiguity-count">実装時の仕様不明点数</label>
+                        <input type="number" id="spec-ambiguity-count" name="specAmbiguityCount" 
+                               min="0" step="1" placeholder="例: 3">
+                    </div>
+                </fieldset>
+                
+                <!-- コメント -->
+                <div class="form-group">
+                    <label for="effect-metrics-comments">コメント</label>
+                    <textarea id="effect-metrics-comments" name="comments" rows="4" 
+                              placeholder="効果に関する定性的な観察や補足事項を記述してください"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-effect-metrics">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- エラー・成功メッセージ表示エリア -->
+    <div id="message-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

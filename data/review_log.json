@@ -1,0 +1,154 @@
+[
+  {
+    "id": "review-001",
+    "projectId": "proj-001",
+    "timestamp": "2024-01-18T13:45:00.000Z",
+    "process": "design",
+    "docType": "design_doc",
+    "category": "spec_inconsistency",
+    "rootCause": "spec_omission",
+    "severity": "high",
+    "status": "Resolved",
+    "description": "APIレスポンス形式の仕様が不明確。エラー時のレスポンス構造が定義されていない。",
+    "docRef": {
+      "path": "docs/api-design.md",
+      "lines": "45-52",
+      "sectionId": "error-handling"
+    },
+    "reviewer": "鈴木一郎",
+    "assignee": "田中太郎"
+  },
+  {
+    "id": "review-002",
+    "projectId": "proj-001",
+    "timestamp": "2024-01-19T10:20:00.000Z",
+    "process": "implementation",
+    "docType": "source_code",
+    "category": "implementation_bug",
+    "rootCause": "implementation_bug",
+    "severity": "medium",
+    "status": "Resolved",
+    "description": "バリデーション処理でnullチェックが不十分。空文字列の場合の処理が考慮されていない。",
+    "docRef": {
+      "path": "src/validators/userValidator.js",
+      "lines": "23",
+      "sectionId": null
+    },
+    "reviewer": "佐藤花子",
+    "assignee": "田中太郎"
+  },
+  {
+    "id": "review-003",
+    "projectId": "proj-001",
+    "timestamp": "2024-01-19T15:30:00.000Z",
+    "process": "testing",
+    "docType": "test_case",
+    "category": "test_deficiency",
+    "rootCause": "test_deficiency",
+    "severity": "medium",
+    "status": "InProgress",
+    "description": "エッジケースのテストが不足。特に境界値テストが必要。",
+    "docRef": {
+      "path": "tests/user.test.js",
+      "lines": "100-120",
+      "sectionId": null
+    },
+    "reviewer": "山田次郎",
+    "assignee": "田中太郎"
+  },
+  {
+    "id": "review-004",
+    "projectId": "proj-001",
+    "timestamp": "2024-01-20T09:15:00.000Z",
+    "process": "documentation",
+    "docType": "user_docs",
+    "category": "doc_deficiency",
+    "rootCause": "doc_deficiency",
+    "severity": "low",
+    "status": "Open",
+    "description": "ユーザーマニュアルにエラーメッセージの説明が不足している。",
+    "docRef": {
+      "path": "docs/user-manual.md",
+      "lines": "200-210",
+      "sectionId": "troubleshooting"
+    },
+    "reviewer": "鈴木一郎",
+    "assignee": "田中太郎"
+  },
+  {
+    "id": "review-005",
+    "projectId": "proj-002",
+    "timestamp": "2024-02-03T14:00:00.000Z",
+    "process": "design",
+    "docType": "spec",
+    "category": "requirements_gap",
+    "rootCause": "spec_omission",
+    "severity": "high",
+    "status": "Resolved",
+    "description": "在庫アラート機能の仕様が曖昧。閾値の設定方法と通知タイミングを明確化する必要がある。",
+    "docRef": {
+      "path": "specs/inventory-alerts.md",
+      "lines": "15-25",
+      "sectionId": "alert-configuration"
+    },
+    "reviewer": "田中太郎",
+    "assignee": "佐藤花子"
+  },
+  {
+    "id": "review-006",
+    "projectId": "proj-002",
+    "timestamp": "2024-02-04T11:30:00.000Z",
+    "process": "implementation",
+    "docType": "source_code",
+    "category": "style_violation",
+    "rootCause": "implementation_bug",
+    "severity": "low",
+    "status": "Resolved",
+    "description": "コーディング規約違反。変数名がキャメルケースになっていない。",
+    "docRef": {
+      "path": "src/components/InventoryList.vue",
+      "lines": "42",
+      "sectionId": null
+    },
+    "reviewer": "山田次郎",
+    "assignee": "佐藤花子"
+  },
+  {
+    "id": "review-007",
+    "projectId": "proj-003",
+    "timestamp": "2024-03-12T16:45:00.000Z",
+    "process": "planning",
+    "docType": "spec",
+    "category": "security_issue",
+    "rootCause": "spec_omission",
+    "severity": "high",
+    "status": "Open",
+    "description": "パスワードポリシーの仕様が不十分。複雑さの要件と有効期限の設定が必要。",
+    "docRef": {
+      "path": "specs/authentication.md",
+      "lines": "30-40",
+      "sectionId": "password-policy"
+    },
+    "reviewer": "佐藤花子",
+    "assignee": "山田次郎"
+  },
+  {
+    "id": "review-008",
+    "projectId": "proj-003",
+    "timestamp": "2024-03-13T10:00:00.000Z",
+    "process": "design",
+    "docType": "api_contract",
+    "category": "design_flaw",
+    "rootCause": "design_decision_error",
+    "severity": "medium",
+    "status": "InProgress",
+    "description": "JWT トークンの有効期限設定が適切でない。セキュリティとユーザビリティのバランスを再検討する必要がある。",
+    "docRef": {
+      "path": "docs/api-contracts/auth.yaml",
+      "lines": "85-95",
+      "sectionId": "token-expiration"
+    },
+    "reviewer": "田中太郎",
+    "assignee": "山田次郎"
+  }
+]

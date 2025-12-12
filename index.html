@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仕様駆動開発管理サイト</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>仕様駆動開発管理サイト</h1>
+        <nav>
+            <button id="add-project-btn" class="btn btn-primary">プロジェクト追加</button>
+            <button id="export-data-btn" class="btn btn-secondary">データエクスポート</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="project-list-section">
+            <h2>プロジェクト一覧</h2>
+            
+            <!-- 空状態メッセージ -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <p>プロジェクトがありません。新しいプロジェクトを追加してください。</p>
+            </div>
+
+            <!-- プロジェクト一覧テーブル -->
+            <div id="project-table-container">
+                <table id="project-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>プロジェクト名</th>
+                            <th>フレームワーク種別</th>
+                            <th>日付</th>
+                            <th>CIステータス</th>
+                            <th>レビュー指摘数</th>
+                            <th>タスク完了率</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="project-table-body">
+                        <!-- プロジェクトデータがここに動的に挿入される -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- プロジェクト追加モーダル -->
+    <div id="add-project-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新規プロジェクト追加</h3>
+                <button class="modal-close" aria-label="閉じる">&times;</button>
+            </div>
+            <form id="add-project-form">
+                <div class="form-group">
+                    <label for="project-name">プロジェクト名 <span class="required">*</span></label>
+                    <input type="text" id="project-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-framework">フレームワーク種別 <span class="required">*</span></label>
+                    <input type="text" id="project-framework" name="framework" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-date">日付 <span class="required">*</span></label>
+                    <input type="date" id="project-date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-assignee">担当者</label>
+                    <input type="text" id="project-assignee" name="assignee">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-add-project">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- エラー・成功メッセージ表示エリア -->
+    <div id="message-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

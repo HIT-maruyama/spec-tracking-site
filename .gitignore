@@ -1,0 +1,28 @@
+# IDE設定ファイル
+.vscode/
+.idea/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp
+
+# Node.js関連（将来の拡張用）
+node_modules/
+npm-debug.log*
+
+# Python関連（開発用サーバー）
+__pycache__/
+*.pyc
+
+# 開発用ファイル（本番環境では不要）
+test-functions.js
+test-ui-functions.html
+TESTING_INSTRUCTIONS.md
+implementation-checklist.md
