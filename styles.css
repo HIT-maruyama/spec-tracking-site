@@ -90,6 +90,13 @@ main {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* レビュー指摘テーブル専用のスタイル */
+.data-table.review-findings-table {
+    border-radius: 0; /* コンテナで角丸を処理 */
+    box-shadow: none; /* コンテナでシャドウを処理 */
+    margin: 0;
+}
+
 .data-table th,
 .data-table td {
     padding: 1rem;
@@ -587,6 +594,7 @@ fieldset.form-group legend {
     /* レスポンシブ表示での可読性維持 - 要件10.5に対応 */
     .review-findings-table {
         font-size: 0.8rem;
+        min-width: 1200px; /* モバイルでも最小幅を維持 */
     }
 
     /* 小さな画面では重要度の低い列を非表示 */
@@ -597,25 +605,41 @@ fieldset.form-group legend {
         display: none;
     }
 
-    /* 内容列の幅を拡張 */
+    /* モバイルでの列幅調整 */
     .review-findings-table th:nth-child(8),  /* 内容 */
     .review-findings-table td:nth-child(8) {
-        width: 50%;
+        width: 350px;
+        min-width: 250px;
+    }
+
+    .review-findings-table th:nth-child(9),  /* ファイル */
+    .review-findings-table td:nth-child(9) {
+        width: 180px;
         min-width: 150px;
     }
 
-    /* ファイル列の幅を調整 */
-    .review-findings-table th:nth-child(9),  /* ファイル */
-    .review-findings-table td:nth-child(9) {
-        width: 20%;
-        min-width: 100px;
-    }
-
-    /* 操作列の幅を調整 */
     .review-findings-table th:nth-child(12), /* 操作 */
     .review-findings-table td:nth-child(12) {
-        width: 15%;
-        min-width: 100px;
+        width: 120px;
+        min-width: 120px;
+    }
+
+    /* コンテナの水平スクロールを強調 */
+    .review-findings-container {
+        border: 2px solid #3498db;
+        position: relative;
+    }
+
+    .review-findings-container::after {
+        content: "← 横にスクロールできます →";
+        position: absolute;
+        top: -25px;
+        right: 0;
+        font-size: 0.75rem;
+        color: #7f8c8d;
+        background-color: #f8f9fa;
+        padding: 2px 8px;
+        border-radius: 4px;
     }
 }
 
@@ -623,6 +647,11 @@ fieldset.form-group legend {
 @media (max-width: 480px) {
     .review-findings-table {
         font-size: 0.75rem;
+    }
+
+    /* 非常に小さな画面でも水平スクロールを維持 */
+    .review-findings-table {
+        min-width: 1000px; /* さらに小さな画面でも最小幅を維持 */
     }
 
     /* さらに多くの列を非表示にして内容列を強調 */
@@ -638,12 +667,19 @@ fieldset.form-group legend {
     /* 内容列をさらに拡張 */
     .review-findings-table th:nth-child(8),  /* 内容 */
     .review-findings-table td:nth-child(8) {
-        width: 60%;
+        width: 300px;
+        min-width: 200px;
     }
 
     /* テーブル全体を横スクロール可能にする */
     .review-findings-container {
         overflow-x: auto;
+        border: 2px solid #e74c3c;
+    }
+
+    .review-findings-container::after {
+        content: "← スクロール →";
+        font-size: 0.7rem;
     }
 
     /* 操作ボタンを縦に配置 */
@@ -828,12 +864,15 @@ fieldset.form-group legend {
 /* レビュー指摘テーブルの追加スタイル */
 .review-findings-table {
     font-size: 0.9rem;
-    table-layout: fixed; /* 固定レイアウトで列幅を制御 */
+    table-layout: auto; /* 自動レイアウトで内容に応じた幅調整 */
+    min-width: 1400px; /* テーブル全体の最小幅を設定 */
+    width: 100%;
 }
 
 .review-findings-table th {
     position: relative;
     user-select: none;
+    white-space: nowrap; /* ヘッダーテキストの改行を防ぐ */
 }
 
 .review-findings-table th.sortable {
@@ -848,53 +887,75 @@ fieldset.form-group legend {
 /* 列幅の最適化 - 要件10.1, 10.2, 10.4に対応 */
 .review-findings-table th:nth-child(1),  /* 日時 */
 .review-findings-table td:nth-child(1) {
-    width: 10%;
-    min-width: 120px;
+    width: 140px;
+    min-width: 140px;
 }
 
 .review-findings-table th:nth-child(2),  /* プロセス */
-.review-findings-table td:nth-child(2),
+.review-findings-table td:nth-child(2) {
+    width: 120px;
+    min-width: 120px;
+}
+
 .review-findings-table th:nth-child(3),  /* ドキュメント種別 */
-.review-findings-table td:nth-child(3),
+.review-findings-table td:nth-child(3) {
+    width: 140px;
+    min-width: 140px;
+}
+
 .review-findings-table th:nth-child(4),  /* カテゴリ */
-.review-findings-table td:nth-child(4),
-.review-findings-table th:nth-child(5) { /* 根本原因 */
-    width: 8%;
-    min-width: 100px;
+.review-findings-table td:nth-child(4) {
+    width: 150px;
+    min-width: 150px;
+}
+
+.review-findings-table th:nth-child(5),  /* 根本原因 */
+.review-findings-table td:nth-child(5) {
+    width: 140px;
+    min-width: 140px;
 }
 
 .review-findings-table th:nth-child(6),  /* 重要度 */
-.review-findings-table td:nth-child(6),
+.review-findings-table td:nth-child(6) {
+    width: 80px;
+    min-width: 80px;
+}
+
 .review-findings-table th:nth-child(7),  /* ステータス */
 .review-findings-table td:nth-child(7) {
-    width: 6%;
-    min-width: 80px;
+    width: 100px;
+    min-width: 100px;
 }
 
 .review-findings-table th:nth-child(8),  /* 内容 */
 .review-findings-table td:nth-child(8) {
-    width: 35%;
-    min-width: 200px;
+    width: 400px;
+    min-width: 300px;
+    max-width: 500px;
 }
 
 .review-findings-table th:nth-child(9),  /* ファイル */
 .review-findings-table td:nth-child(9) {
-    width: 15%;
-    min-width: 150px;
+    width: 200px;
+    min-width: 180px;
 }
 
 .review-findings-table th:nth-child(10), /* レビュアー */
-.review-findings-table td:nth-child(10),
+.review-findings-table td:nth-child(10) {
+    width: 100px;
+    min-width: 100px;
+}
+
 .review-findings-table th:nth-child(11), /* 担当者 */
 .review-findings-table td:nth-child(11) {
-    width: 8%;
-    min-width: 80px;
+    width: 100px;
+    min-width: 100px;
 }
 
 .review-findings-table th:nth-child(12), /* 操作 */
 .review-findings-table td:nth-child(12) {
-    width: 10%;
-    min-width: 120px;
+    width: 140px;
+    min-width: 140px;
 }
 
 /* 長いテキストの折り返し表示 - 要件10.3に対応 */
@@ -904,6 +965,7 @@ fieldset.form-group legend {
     word-break: break-word;
     line-height: 1.4;
     vertical-align: top;
+    padding: 0.75rem;
 }
 
 .review-findings-table td:nth-child(9) { /* ファイル列 */
@@ -912,18 +974,35 @@ fieldset.form-group legend {
     word-break: break-all; /* ファイルパスは強制的に改行 */
     line-height: 1.4;
     vertical-align: top;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
 }
 
-/* 分類フィールド列のテキスト省略 */
+/* 分類フィールド列のテキスト表示 */
 .review-findings-table td:nth-child(2),  /* プロセス */
 .review-findings-table td:nth-child(3),  /* ドキュメント種別 */
 .review-findings-table td:nth-child(4),  /* カテゴリ */
-.review-findings-table td:nth-child(5),  /* 根本原因 */
+.review-findings-table td:nth-child(5) { /* 根本原因 */
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.3;
+    vertical-align: top;
+}
+
 .review-findings-table td:nth-child(6),  /* 重要度 */
 .review-findings-table td:nth-child(7) { /* ステータス */
     white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* レビュアー・担当者列 */
+.review-findings-table td:nth-child(10), /* レビュアー */
+.review-findings-table td:nth-child(11) { /* 担当者 */
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
 .sort-icon {
@@ -937,15 +1016,46 @@ fieldset.form-group legend {
 
 .action-buttons {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.25rem;
     justify-content: center;
     white-space: nowrap;
+    flex-wrap: nowrap;
 }
 
-/* レビュー指摘コンテナ */
+.action-buttons .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    min-width: auto;
+}
+
+/* レビュー指摘コンテナ - 水平スクロール対応 */
 .review-findings-container {
     overflow-x: auto;
+    overflow-y: visible;
     margin-bottom: 1rem;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* スクロールバーのスタイリング */
+.review-findings-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.review-findings-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.review-findings-container::-webkit-scrollbar-thumb {
+    background: #bdc3c7;
+    border-radius: 4px;
+}
+
+.review-findings-container::-webkit-scrollbar-thumb:hover {
+    background: #95a5a6;
 }
 
 /* 大きなモーダル */
