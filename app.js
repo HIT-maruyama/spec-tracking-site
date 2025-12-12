@@ -2304,7 +2304,7 @@ function generateReviewFindingsTable(reviewFindings) {
                 <td>${escapeHtml(finding.rootCause)}</td>
                 <td><span class="severity-${finding.severity}">${escapeHtml(finding.severity)}</span></td>
                 <td><span class="status-${finding.status.toLowerCase()}">${escapeHtml(finding.status)}</span></td>
-                <td class="description-cell" title="${escapeHtml(finding.description)}">${truncateText(escapeHtml(finding.description), 100)}</td>
+                <td class="description-cell" title="${escapeHtml(finding.description)}">${escapeHtml(finding.description)}</td>
                 <td>${formatDocRef(finding.docRef)}</td>
                 <td>${finding.reviewer ? escapeHtml(finding.reviewer) : '-'}</td>
                 <td>${finding.assignee ? escapeHtml(finding.assignee) : '-'}</td>

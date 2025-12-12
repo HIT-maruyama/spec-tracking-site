@@ -583,6 +583,79 @@ fieldset.form-group legend {
     .data-table td {
         padding: 0.5rem;
     }
+
+    /* レスポンシブ表示での可読性維持 - 要件10.5に対応 */
+    .review-findings-table {
+        font-size: 0.8rem;
+    }
+
+    /* 小さな画面では重要度の低い列を非表示 */
+    .review-findings-table th:nth-child(10), /* レビュアー */
+    .review-findings-table td:nth-child(10),
+    .review-findings-table th:nth-child(11), /* 担当者 */
+    .review-findings-table td:nth-child(11) {
+        display: none;
+    }
+
+    /* 内容列の幅を拡張 */
+    .review-findings-table th:nth-child(8),  /* 内容 */
+    .review-findings-table td:nth-child(8) {
+        width: 50%;
+        min-width: 150px;
+    }
+
+    /* ファイル列の幅を調整 */
+    .review-findings-table th:nth-child(9),  /* ファイル */
+    .review-findings-table td:nth-child(9) {
+        width: 20%;
+        min-width: 100px;
+    }
+
+    /* 操作列の幅を調整 */
+    .review-findings-table th:nth-child(12), /* 操作 */
+    .review-findings-table td:nth-child(12) {
+        width: 15%;
+        min-width: 100px;
+    }
+}
+
+/* 非常に小さな画面向けのスタイル */
+@media (max-width: 480px) {
+    .review-findings-table {
+        font-size: 0.75rem;
+    }
+
+    /* さらに多くの列を非表示にして内容列を強調 */
+    .review-findings-table th:nth-child(2),  /* プロセス */
+    .review-findings-table td:nth-child(2),
+    .review-findings-table th:nth-child(3),  /* ドキュメント種別 */
+    .review-findings-table td:nth-child(3),
+    .review-findings-table th:nth-child(5),  /* 根本原因 */
+    .review-findings-table td:nth-child(5) {
+        display: none;
+    }
+
+    /* 内容列をさらに拡張 */
+    .review-findings-table th:nth-child(8),  /* 内容 */
+    .review-findings-table td:nth-child(8) {
+        width: 60%;
+    }
+
+    /* テーブル全体を横スクロール可能にする */
+    .review-findings-container {
+        overflow-x: auto;
+    }
+
+    /* 操作ボタンを縦に配置 */
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .action-buttons .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
 }
 
 /* 効果メトリクス表示 */
@@ -755,6 +828,7 @@ fieldset.form-group legend {
 /* レビュー指摘テーブルの追加スタイル */
 .review-findings-table {
     font-size: 0.9rem;
+    table-layout: fixed; /* 固定レイアウトで列幅を制御 */
 }
 
 .review-findings-table th {
@@ -771,6 +845,87 @@ fieldset.form-group legend {
     background-color: #2c3e50;
 }
 
+/* 列幅の最適化 - 要件10.1, 10.2, 10.4に対応 */
+.review-findings-table th:nth-child(1),  /* 日時 */
+.review-findings-table td:nth-child(1) {
+    width: 10%;
+    min-width: 120px;
+}
+
+.review-findings-table th:nth-child(2),  /* プロセス */
+.review-findings-table td:nth-child(2),
+.review-findings-table th:nth-child(3),  /* ドキュメント種別 */
+.review-findings-table td:nth-child(3),
+.review-findings-table th:nth-child(4),  /* カテゴリ */
+.review-findings-table td:nth-child(4),
+.review-findings-table th:nth-child(5) { /* 根本原因 */
+    width: 8%;
+    min-width: 100px;
+}
+
+.review-findings-table th:nth-child(6),  /* 重要度 */
+.review-findings-table td:nth-child(6),
+.review-findings-table th:nth-child(7),  /* ステータス */
+.review-findings-table td:nth-child(7) {
+    width: 6%;
+    min-width: 80px;
+}
+
+.review-findings-table th:nth-child(8),  /* 内容 */
+.review-findings-table td:nth-child(8) {
+    width: 35%;
+    min-width: 200px;
+}
+
+.review-findings-table th:nth-child(9),  /* ファイル */
+.review-findings-table td:nth-child(9) {
+    width: 15%;
+    min-width: 150px;
+}
+
+.review-findings-table th:nth-child(10), /* レビュアー */
+.review-findings-table td:nth-child(10),
+.review-findings-table th:nth-child(11), /* 担当者 */
+.review-findings-table td:nth-child(11) {
+    width: 8%;
+    min-width: 80px;
+}
+
+.review-findings-table th:nth-child(12), /* 操作 */
+.review-findings-table td:nth-child(12) {
+    width: 10%;
+    min-width: 120px;
+}
+
+/* 長いテキストの折り返し表示 - 要件10.3に対応 */
+.review-findings-table td:nth-child(8) { /* 内容列 */
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.4;
+    vertical-align: top;
+}
+
+.review-findings-table td:nth-child(9) { /* ファイル列 */
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-all; /* ファイルパスは強制的に改行 */
+    line-height: 1.4;
+    vertical-align: top;
+}
+
+/* 分類フィールド列のテキスト省略 */
+.review-findings-table td:nth-child(2),  /* プロセス */
+.review-findings-table td:nth-child(3),  /* ドキュメント種別 */
+.review-findings-table td:nth-child(4),  /* カテゴリ */
+.review-findings-table td:nth-child(5),  /* 根本原因 */
+.review-findings-table td:nth-child(6),  /* 重要度 */
+.review-findings-table td:nth-child(7) { /* ステータス */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .sort-icon {
     position: absolute;
     right: 0.5rem;
@@ -785,6 +940,12 @@ fieldset.form-group legend {
     gap: 0.5rem;
     justify-content: center;
     white-space: nowrap;
+}
+
+/* レビュー指摘コンテナ */
+.review-findings-container {
+    overflow-x: auto;
+    margin-bottom: 1rem;
 }
 
 /* 大きなモーダル */

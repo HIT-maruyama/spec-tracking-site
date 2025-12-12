@@ -477,6 +477,114 @@ UUIDv4を使用してプロジェクトIDとレビュー指摘IDを生成。ブ�
 - 最小要件: ES6サポート、localStorage、Fetch API
 - 対象ブラウザ: Chrome 60+、Firefox 60+、Safari 12+、Edge 79+
 
+## UI Design Improvements
+
+### レビュー指摘テーブルの列幅最適化
+
+現在のレビュー指摘テーブルは、すべての列が均等な幅で表示されているため、「内容」列の可読性が低下している。以下の改善を実装する：
+
+#### 列幅の設計方針
+
+1. **内容重視の幅配分**
+   - 「内容」列：全体の30-40%の幅を割り当て
+   - 「ファイル」列：全体の15-20%の幅を割り当て
+   - 分類フィールド列：各8-12%の幅を割り当て
+
+2. **具体的な列幅設定**
+   ```css
+   .review-findings-table th:nth-child(1),  /* 日時 */
+   .review-findings-table td:nth-child(1) {
+     width: 10%;
+     min-width: 120px;
+   }
+   
+   .review-findings-table th:nth-child(2),  /* プロセス */
+   .review-findings-table td:nth-child(2),
+   .review-findings-table th:nth-child(3),  /* ドキュメント種別 */
+   .review-findings-table td:nth-child(3),
+   .review-findings-table th:nth-child(4),  /* カテゴリ */
+   .review-findings-table td:nth-child(4),
+   .review-findings-table th:nth-child(5),  /* 根本原因 */
+   .review-findings-table td:nth-child(5) {
+     width: 8%;
+     min-width: 100px;
+   }
+   
+   .review-findings-table th:nth-child(6),  /* 重要度 */
+   .review-findings-table td:nth-child(6),
+   .review-findings-table th:nth-child(7),  /* ステータス */
+   .review-findings-table td:nth-child(7) {
+     width: 6%;
+     min-width: 80px;
+   }
+   
+   .review-findings-table th:nth-child(8),  /* 内容 */
+   .review-findings-table td:nth-child(8) {
+     width: 35%;
+     min-width: 200px;
+   }
+   
+   .review-findings-table th:nth-child(9),  /* ファイル */
+   .review-findings-table td:nth-child(9) {
+     width: 15%;
+     min-width: 150px;
+   }
+   
+   .review-findings-table th:nth-child(10), /* レビュアー */
+   .review-findings-table td:nth-child(10),
+   .review-findings-table th:nth-child(11), /* 担当者 */
+   .review-findings-table td:nth-child(11) {
+     width: 8%;
+     min-width: 80px;
+   }
+   
+   .review-findings-table th:nth-child(12), /* 操作 */
+   .review-findings-table td:nth-child(12) {
+     width: 10%;
+     min-width: 120px;
+   }
+   ```
+
+3. **テキスト表示の改善**
+   - 「内容」列のテキストは自動折り返しを有効化
+   - `white-space: normal`と`word-wrap: break-word`を適用
+   - 最大高さ制限を削除し、必要に応じて行の高さを拡張
+
+4. **レスポンシブ対応**
+   - 768px以下の画面では、重要度の低い列を非表示
+   - 「内容」列の幅を50%以上に拡張
+   - 横スクロールを有効化して全ての情報にアクセス可能
+
+#### 実装の詳細
+
+1. **CSS Grid Layoutの活用**
+   - テーブルレイアウトをCSS Gridで制御
+   - 各列の幅を`fr`単位で柔軟に設定
+   - 最小幅制約を`minmax()`で指定
+
+2. **テキスト表示の最適化**
+   - 長いテキストの省略表示を廃止
+   - `title`属性によるツールチップは維持
+   - 行の高さを`auto`に設定して内容に応じて調整
+
+3. **パフォーマンス考慮**
+   - 大量のレビュー指摘がある場合の表示性能を維持
+   - 仮想スクロールは実装せず、シンプルなテーブル表示を維持
+
+#### 期待される効果
+
+1. **可読性の向上**
+   - 「内容」列の文章が読みやすくなる
+   - 重要な情報（内容、ファイル）により多くのスペースを確保
+
+2. **ユーザビリティの向上**
+   - レビュー指摘の詳細を素早く把握可能
+   - テーブル内での情報検索が効率化
+
+3. **レスポンシブ対応**
+   - モバイルデバイスでも適切に表示
+   - 画面サイズに応じた最適な情報表示
+
 ## Correctness Properties
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
@@ -596,3 +704,19 @@ UUIDv4を使用してプロジェクトIDとレビュー指摘IDを生成。ブ�
 ### Property 29: フィルタクリア
 *For any* フィルタが適用された状態、フィルタクリア操作後に現在のプロジェクトのすべてのレビュー指摘が表示されなければならない
 **Validates: Requirements 9.5**
+
+### Property 30: レビュー指摘テーブルの内容列幅
+*For any* レビュー指摘テーブル、「内容」列の幅は他の分類フィールド列よりも大きく設定されなければならない
+**Validates: Requirements 10.1**
+
+### Property 31: テーブル列幅の適切な比率
+*For any* レビュー指摘テーブル、重要度の高い列（内容、ファイル）により多くの幅が割り当てられ、分類フィールド列には最小限の幅が割り当てられなければならない
+**Validates: Requirements 10.2, 10.4**
+
+### Property 32: 長いテキストの折り返し表示
+*For any* 「内容」列の長いテキスト、テキストは適切に折り返されて表示され、切り捨てられることなく全内容が表示されなければならない
+**Validates: Requirements 10.3**
+
+### Property 33: レスポンシブ表示での可読性維持
+*For any* 小さな画面サイズでのレビュー指摘テーブル、「内容」列の可読性が維持されなければならない
+**Validates: Requirements 10.5**
