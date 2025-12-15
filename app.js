@@ -3327,6 +3327,7 @@ function showModal(modalId) {
 
         // モーダルを表示
         modal.style.display = 'flex';
+        modal.classList.add('show');
         modal.setAttribute('aria-hidden', 'false');
         
         // AnimationControllerを使用してフェードイン
@@ -3409,11 +3410,13 @@ function hideModal(modalId) {
             // アニメーション後にモーダルを非表示
             controller.fadeOut(modalContent, 200).then(() => {
                 modal.style.display = 'none';
+                modal.classList.remove('show');
                 modal.setAttribute('aria-hidden', 'true');
             });
         } else {
             // アニメーション無効時は即座に非表示
             modal.style.display = 'none';
+            modal.classList.remove('show');
             modal.setAttribute('aria-hidden', 'true');
         }
         
