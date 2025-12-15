@@ -1945,16 +1945,67 @@ function initializeNavigationState() {
 // ========================================
 // アプリケーション初期化
 document.addEventListener('DOMContentLoaded', function() {
-    // ナビゲーション状態の初期化
-    initializeNavigationState();
+    console.log('DOM読み込み完了 - アプリケーション初期化開始');
     
-    // 現在のページを判定して適切な初期化を実行
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    
-    if (currentPage === 'index.html' || currentPage === '') {
-        initializeProjectListPage();
-    } else if (currentPage === 'project-detail.html') {
-        initializeProjectDetailPage();
+    try {
+        // 各種マネージャーの初期化
+        console.log('マネージャーを初期化中...');
+        
+        // ThemeManagerの初期化
+        themeManager = new ThemeManager();
+        console.log('ThemeManager が初期化されました');
+        
+        // ResponsiveLayoutManagerの初期化
+        responsiveLayoutManager = new ResponsiveLayoutManager();
+        console.log('ResponsiveLayoutManager が初期化されました');
+        
+        // AnimationControllerの初期化
+        animationController = initializeAnimationController();
+        
+        // AccessibilityManagerの初期化
+        accessibilityManager = initializeAccessibilityManager();
+        
+        // 既存のボタンにリップル効果を追加
+        enhanceButtonsWithRippleEffect();
+        
+        // アニメーション設定UIを追加
+        addAnimationToggleToDesktopNav();
+        addAnimationToggleToMobileNav();
+        
+        // 動的に追加されるボタンを監視
+        observeButtonAdditions();
+        
+        // 仮想スクロール機能の強化
+        enhanceExistingVirtualScroll();
+        
+        // ナビゲーション状態の初期化
+        initializeNavigationState();
+        
+        console.log('マネージャーの初期化完了');
+        
+        // 現在のページを判定して適切な初期化を実行
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        
+        if (currentPage === 'index.html' || currentPage === '') {
+            initializeProjectListPage();
+        } else if (currentPage === 'project-detail.html') {
+            initializeProjectDetailPage();
+        }
+        
+        console.log('アプリケーション初期化完了');
+    } catch (error) {
+        console.error('アプリケーション初期化中にエラーが発生:', error);
+        // エラーが発生してもページの基本機能は動作するようにする
+        try {
+            const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            if (currentPage === 'index.html' || currentPage === '') {
+                initializeProjectListPage();
+            } else if (currentPage === 'project-detail.html') {
+                initializeProjectDetailPage();
+            }
+        } catch (fallbackError) {
+            console.error('フォールバック初期化も失敗:', fallbackError);
+        }
     }
 });
 
@@ -5980,17 +6031,25 @@ function getAnimationController() {
  * 既存のボタンにリップル効果を追加
  */
 function enhanceButtonsWithRippleEffect() {
-    const controller = getAnimationController();
-    
-    // すべてのボタンにリップル効果を追加
-    const buttons = document.querySelectorAll('.btn, button:not(.modal-close):not(.theme-toggle)');
-    buttons.forEach(button => {
-        // 既にリップル効果が追加されていない場合のみ追加
-        if (!button.hasAttribute('data-ripple-enhanced')) {
-            controller.addRippleEffect(button);
-            button.setAttribute('data-ripple-enhanced', 'true');
-        }
-    });
+    try {
+        const controller = getAnimationController();
+        
+        // すべてのボタンにリップル効果を追加
+        const buttons = document.querySelectorAll('.btn, button:not(.modal-close):not(.theme-toggle)');
+        buttons.forEach(button => {
+            try {
+                // 既にリップル効果が追加されていない場合のみ追加
+                if (!button.hasAttribute('data-ripple-enhanced')) {
+                    controller.addRippleEffect(button);
+                    button.setAttribute('data-ripple-enhanced', 'true');
+                }
+            } catch (buttonError) {
+                console.error('ボタンへのリップル効果追加に失敗:', buttonError);
+            }
+        });
+    } catch (error) {
+        console.error('ボタンリップル効果の強化に失敗:', error);
+    }
 }
 
 /**
@@ -6035,18 +6094,27 @@ function createAnimationToggleUI() {
  * モバイルナビゲーションにアニメーション設定を追加
  */
 function addAnimationToggleToMobileNav() {
-    const mobileNavContent = document.querySelector('.mobile-nav-content');
-    if (mobileNavContent) {
-        const toggleButton = createAnimationToggleUI();
-        toggleButton.className = 'mobile-nav-item animation-toggle-mobile';
-        
-        // テーマ切り替えボタンの後に挿入
-        const themeToggle = mobileNavContent.querySelector('.theme-toggle-mobile');
-        if (themeToggle) {
-            themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
-        } else {
-            mobileNavContent.appendChild(toggleButton);
+    try {
+        const mobileNavContent = document.querySelector('.mobile-nav-content');
+        if (mobileNavContent) {
+            // 既に追加されている場合はスキップ
+            if (mobileNavContent.querySelector('.animation-toggle-mobile')) {
+                return;
+            }
+            
+            const toggleButton = createAnimationToggleUI();
+            toggleButton.className = 'mobile-nav-item animation-toggle-mobile';
+            
+            // テーマ切り替えボタンの後に挿入
+            const themeToggle = mobileNavContent.querySelector('.theme-toggle-mobile');
+            if (themeToggle) {
+                themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
+            } else {
+                mobileNavContent.appendChild(toggleButton);
+            }
         }
+    } catch (error) {
+        console.error('モバイルナビゲーションへのアニメーション設定追加に失敗:', error);
     }
 }
 
@@ -6054,18 +6122,27 @@ function addAnimationToggleToMobileNav() {
  * デスクトップナビゲーションにアニメーション設定を追加
  */
 function addAnimationToggleToDesktopNav() {
-    const desktopNav = document.querySelector('.desktop-nav');
-    if (desktopNav) {
-        const toggleButton = createAnimationToggleUI();
-        toggleButton.className = 'btn btn-secondary animation-toggle';
-        
-        // テーマ切り替えボタンの後に挿入
-        const themeToggle = desktopNav.querySelector('.theme-toggle');
-        if (themeToggle) {
-            themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
-        } else {
-            desktopNav.appendChild(toggleButton);
+    try {
+        const desktopNav = document.querySelector('.desktop-nav');
+        if (desktopNav) {
+            // 既に追加されている場合はスキップ
+            if (desktopNav.querySelector('.animation-toggle')) {
+                return;
+            }
+            
+            const toggleButton = createAnimationToggleUI();
+            toggleButton.className = 'btn btn-secondary animation-toggle';
+            
+            // テーマ切り替えボタンの後に挿入
+            const themeToggle = desktopNav.querySelector('.theme-toggle');
+            if (themeToggle) {
+                themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
+            } else {
+                desktopNav.appendChild(toggleButton);
+            }
         }
+    } catch (error) {
+        console.error('デスクトップナビゲーションへのアニメーション設定追加に失敗:', error);
     }
 }
 
@@ -6849,11 +6926,7 @@ class ResponsiveLayoutManager {
 // グローバル変数として ResponsiveLayoutManager インスタンスを作成
 let responsiveLayoutManager;
 
-// DOM読み込み完了後に初期化
-document.addEventListener('DOMContentLoaded', () => {
-    responsiveLayoutManager = new ResponsiveLayoutManager();
-    console.log('ResponsiveLayoutManager が初期化されました');
-});
+// ResponsiveLayoutManagerの初期化（メイン初期化に統合）
 
 // ========================================
 // モバイルナビゲーション用のグローバル関数
@@ -7181,27 +7254,7 @@ class ThemeManager {
 // グローバル変数として ThemeManager インスタンスを作成
 let themeManager;
 
-// DOM読み込み完了後に初期化
-document.addEventListener('DOMContentLoaded', () => {
-    themeManager = new ThemeManager();
-    console.log('ThemeManager が初期化されました');
-    
-    // AnimationControllerを初期化
-    animationController = initializeAnimationController();
-    
-    // AccessibilityManagerを初期化
-    accessibilityManager = initializeAccessibilityManager();
-    
-    // 既存のボタンにリップル効果を追加
-    enhanceButtonsWithRippleEffect();
-    
-    // アニメーション設定UIを追加
-    addAnimationToggleToDesktopNav();
-    addAnimationToggleToMobileNav();
-    
-    // 動的に追加されるボタンを監視
-    observeButtonAdditions();
-});
+// ThemeManager、AnimationController、AccessibilityManagerの初期化（メイン初期化に統合）
 
 // ========================================
 // テーマ管理用のグローバル関数
@@ -7752,7 +7805,4 @@ function generateEnhancedVirtualScrollTable(sortedFindings) {
     return wrapper.outerHTML;
 }
 
-// 初期化時に既存機能を強化
-document.addEventListener('DOMContentLoaded', function() {
-    enhanceExistingVirtualScroll();
-});
+// 仮想スクロール機能の強化（メイン初期化に統合）
