@@ -3606,10 +3606,15 @@ function setupProjectDetailEventListeners(projectId) {
     try {
         // プロジェクト編集ボタン
         const editProjectBtn = document.getElementById('edit-project-btn');
+        console.log('プロジェクト編集ボタン:', editProjectBtn);
         if (editProjectBtn) {
+            console.log('プロジェクト編集ボタンにイベントリスナーを設定');
             editProjectBtn.addEventListener('click', () => {
+                console.log('プロジェクト編集ボタンがクリックされました');
                 showEditProjectModal(projectId);
             });
+        } else {
+            console.warn('プロジェクト編集ボタンが見つかりません');
         }
         
         // プロジェクト削除ボタン
@@ -3654,10 +3659,15 @@ function setupProjectDetailEventListeners(projectId) {
         
         // CI結果追加ボタン
         const addCIResultBtn = document.getElementById('add-ci-result-btn');
+        console.log('CI結果追加ボタン:', addCIResultBtn);
         if (addCIResultBtn) {
+            console.log('CI結果追加ボタンにイベントリスナーを設定');
             addCIResultBtn.addEventListener('click', () => {
+                console.log('CI結果追加ボタンがクリックされました');
                 showAddCIResultModal(projectId);
             });
+        } else {
+            console.warn('CI結果追加ボタンが見つかりません');
         }
         
         // CI結果追加フォーム
@@ -3694,10 +3704,15 @@ function setupProjectDetailEventListeners(projectId) {
 
         // レビュー指摘追加ボタン
         const addReviewFindingBtn = document.getElementById('add-review-finding-btn');
+        console.log('レビュー指摘追加ボタン:', addReviewFindingBtn);
         if (addReviewFindingBtn) {
+            console.log('レビュー指摘追加ボタンにイベントリスナーを設定');
             addReviewFindingBtn.addEventListener('click', () => {
+                console.log('レビュー指摘追加ボタンがクリックされました');
                 showAddReviewFindingModal(projectId);
             });
+        } else {
+            console.warn('レビュー指摘追加ボタンが見つかりません');
         }
         
         // レビュー指摘追加フォーム
@@ -3758,10 +3773,15 @@ function setupProjectDetailEventListeners(projectId) {
 
         // 効果メトリクス編集ボタン
         const editEffectMetricsBtn = document.getElementById('edit-effect-metrics-btn');
+        console.log('効果メトリクス編集ボタン:', editEffectMetricsBtn);
         if (editEffectMetricsBtn) {
+            console.log('効果メトリクス編集ボタンにイベントリスナーを設定');
             editEffectMetricsBtn.addEventListener('click', () => {
+                console.log('効果メトリクス編集ボタンがクリックされました');
                 showEditEffectMetricsModal(projectId);
             });
+        } else {
+            console.warn('効果メトリクス編集ボタンが見つかりません');
         }
         
         // 効果メトリクス編集フォーム
