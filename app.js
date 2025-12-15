@@ -3170,11 +3170,11 @@ function createProjectTableRow(project) {
     
     // CIステータス
     const ciStatusCell = document.createElement('td');
-    const ciStatus = DataManager.getLatestCIStatusByProjectId(project.id);
-    if (ciStatus) {
+    const tableCiStatus = DataManager.getLatestCIStatusByProjectId(project.id);
+    if (tableCiStatus) {
         const statusSpan = document.createElement('span');
-        statusSpan.className = `ci-status ci-status-${ciStatus}`;
-        statusSpan.textContent = ciStatus === 'pass' ? '成功' : '失敗';
+        statusSpan.className = `ci-status ci-status-${tableCiStatus}`;
+        statusSpan.textContent = tableCiStatus === 'pass' ? '成功' : '失敗';
         ciStatusCell.appendChild(statusSpan);
     } else {
         ciStatusCell.textContent = '-';
