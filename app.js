@@ -3326,9 +3326,19 @@ function showModal(modalId) {
         }
 
         // モーダルを表示
+        console.log(`モーダル要素:`, modal);
+        console.log(`モーダルの現在のスタイル:`, modal.style.cssText);
+        console.log(`モーダルの現在のクラス:`, modal.className);
+        
         modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
         modal.classList.add('show');
         modal.setAttribute('aria-hidden', 'false');
+        
+        console.log(`モーダル表示後のスタイル:`, modal.style.cssText);
+        console.log(`モーダル表示後のクラス:`, modal.className);
+        console.log(`モーダルの計算されたスタイル:`, window.getComputedStyle(modal).display, window.getComputedStyle(modal).opacity, window.getComputedStyle(modal).visibility);
         
         // AnimationControllerを使用してフェードイン
         const controller = getAnimationController();
@@ -3410,12 +3420,16 @@ function hideModal(modalId) {
             // アニメーション後にモーダルを非表示
             controller.fadeOut(modalContent, 200).then(() => {
                 modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
                 modal.classList.remove('show');
                 modal.setAttribute('aria-hidden', 'true');
             });
         } else {
             // アニメーション無効時は即座に非表示
             modal.style.display = 'none';
+            modal.style.opacity = '0';
+            modal.style.visibility = 'hidden';
             modal.classList.remove('show');
             modal.setAttribute('aria-hidden', 'true');
         }
