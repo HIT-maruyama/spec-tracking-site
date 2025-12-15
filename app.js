@@ -3238,9 +3238,7 @@ function setupProjectListEventListeners() {
     // プロジェクト追加ボタン
     const addProjectBtn = document.getElementById('add-project-btn');
     if (addProjectBtn) {
-        console.log('プロジェクト追加ボタンが見つかりました');
         addProjectBtn.addEventListener('click', () => {
-            console.log('プロジェクト追加ボタンがクリックされました');
             showModal('add-project-modal');
         });
     } else {
@@ -3250,9 +3248,7 @@ function setupProjectListEventListeners() {
     // データエクスポートボタン
     const exportDataBtn = document.getElementById('export-data-btn');
     if (exportDataBtn) {
-        console.log('データエクスポートボタンが見つかりました');
         exportDataBtn.addEventListener('click', () => {
-            console.log('データエクスポートボタンがクリックされました');
             exportData();
         });
     } else {
@@ -3262,9 +3258,7 @@ function setupProjectListEventListeners() {
     // モバイル版プロジェクト追加ボタン
     const mobileAddProjectBtn = document.getElementById('mobile-add-project-btn');
     if (mobileAddProjectBtn) {
-        console.log('モバイル版プロジェクト追加ボタンが見つかりました');
         mobileAddProjectBtn.addEventListener('click', () => {
-            console.log('モバイル版プロジェクト追加ボタンがクリックされました');
             showModal('add-project-modal');
         });
     } else {
@@ -3274,9 +3268,7 @@ function setupProjectListEventListeners() {
     // モバイル版データエクスポートボタン
     const mobileExportDataBtn = document.getElementById('mobile-export-data-btn');
     if (mobileExportDataBtn) {
-        console.log('モバイル版データエクスポートボタンが見つかりました');
         mobileExportDataBtn.addEventListener('click', () => {
-            console.log('モバイル版データエクスポートボタンがクリックされました');
             exportData();
         });
     } else {
@@ -3286,7 +3278,6 @@ function setupProjectListEventListeners() {
     // プロジェクト追加フォーム
     const addProjectForm = document.getElementById('add-project-form');
     if (addProjectForm) {
-        console.log('プロジェクト追加フォームが見つかりました');
         addProjectForm.addEventListener('submit', handleAddProjectSubmit);
     } else {
         console.error('プロジェクト追加フォームが見つかりません: add-project-form');
@@ -3295,9 +3286,7 @@ function setupProjectListEventListeners() {
     // プロジェクト追加モーダルのキャンセルボタン
     const cancelAddProjectBtn = document.getElementById('cancel-add-project');
     if (cancelAddProjectBtn) {
-        console.log('キャンセルボタンが見つかりました');
         cancelAddProjectBtn.addEventListener('click', () => {
-            console.log('キャンセルボタンがクリックされました');
             hideModal('add-project-modal');
             resetAddProjectForm();
         });
@@ -3623,15 +3612,10 @@ function setupProjectDetailEventListeners(projectId) {
     try {
         // プロジェクト編集ボタン
         const editProjectBtn = document.getElementById('edit-project-btn');
-        console.log('プロジェクト編集ボタン:', editProjectBtn);
         if (editProjectBtn) {
-            console.log('プロジェクト編集ボタンにイベントリスナーを設定');
             editProjectBtn.addEventListener('click', () => {
-                console.log('プロジェクト編集ボタンがクリックされました');
                 showEditProjectModal(projectId);
             });
-        } else {
-            console.warn('プロジェクト編集ボタンが見つかりません');
         }
         
         // プロジェクト削除ボタン
@@ -3676,15 +3660,10 @@ function setupProjectDetailEventListeners(projectId) {
         
         // CI結果追加ボタン
         const addCIResultBtn = document.getElementById('add-ci-result-btn');
-        console.log('CI結果追加ボタン:', addCIResultBtn);
         if (addCIResultBtn) {
-            console.log('CI結果追加ボタンにイベントリスナーを設定');
             addCIResultBtn.addEventListener('click', () => {
-                console.log('CI結果追加ボタンがクリックされました');
                 showAddCIResultModal(projectId);
             });
-        } else {
-            console.warn('CI結果追加ボタンが見つかりません');
         }
         
         // CI結果追加フォーム
@@ -3721,15 +3700,10 @@ function setupProjectDetailEventListeners(projectId) {
 
         // レビュー指摘追加ボタン
         const addReviewFindingBtn = document.getElementById('add-review-finding-btn');
-        console.log('レビュー指摘追加ボタン:', addReviewFindingBtn);
         if (addReviewFindingBtn) {
-            console.log('レビュー指摘追加ボタンにイベントリスナーを設定');
             addReviewFindingBtn.addEventListener('click', () => {
-                console.log('レビュー指摘追加ボタンがクリックされました');
                 showAddReviewFindingModal(projectId);
             });
-        } else {
-            console.warn('レビュー指摘追加ボタンが見つかりません');
         }
         
         // レビュー指摘追加フォーム
@@ -3790,15 +3764,10 @@ function setupProjectDetailEventListeners(projectId) {
 
         // 効果メトリクス編集ボタン
         const editEffectMetricsBtn = document.getElementById('edit-effect-metrics-btn');
-        console.log('効果メトリクス編集ボタン:', editEffectMetricsBtn);
         if (editEffectMetricsBtn) {
-            console.log('効果メトリクス編集ボタンにイベントリスナーを設定');
             editEffectMetricsBtn.addEventListener('click', () => {
-                console.log('効果メトリクス編集ボタンがクリックされました');
                 showEditEffectMetricsModal(projectId);
             });
-        } else {
-            console.warn('効果メトリクス編集ボタンが見つかりません');
         }
         
         // 効果メトリクス編集フォーム
@@ -4962,7 +4931,7 @@ function showAddReviewFindingModal(projectId) {
         window.currentProjectId = projectId;
         
         // モーダルを表示
-        modal.style.display = 'block';
+        showModal('add-review-finding-modal');
         
         // 最初の入力フィールドにフォーカス
         const firstInput = form.querySelector('select, input, textarea');
