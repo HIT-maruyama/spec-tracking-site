@@ -3311,15 +3311,16 @@ function setupProjectListEventListeners() {
  */
 function showModal(modalId) {
     try {
+        console.log(`showModal呼び出し: ${modalId}`);
         const modal = document.getElementById(modalId);
         if (!modal) {
             console.error(`モーダルが見つかりません: ${modalId}`);
-    
             return false;
         }
 
+        console.log(`モーダル要素取得成功: ${modalId}`);
+
         // モーダルを表示
-        
         // インラインスタイルのdisplay:noneを削除してからflexを設定
         modal.style.removeProperty('display');
         modal.style.display = 'flex';
@@ -3328,22 +3329,78 @@ function showModal(modalId) {
         modal.classList.add('show');
         modal.setAttribute('aria-hidden', 'false');
 
+        // アニメーション無効時の追加処理
+        const isAnimationsDisabled = document.body.classList.contains('animations-disabled');
+        if (isAnimationsDisabled) {
+            console.log(`アニメーション無効モード: ${modalId}`);
+            // アニメーション無効時は即座に完全表示状態にする
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.transform = 'none';
+                modalContent.style.opacity = '1';
+                modalContent.style.visibility = 'visible';
+            }
+        }
+
+        console.log(`モーダル基本スタイル設定完了: ${modalId}`, {
+            display: modal.style.display,
+            opacity: modal.style.opacity,
+            visibility: modal.style.visibility,
+            classList: modal.classList.toString(),
+            animationsDisabled: isAnimationsDisabled
+        });
+
         
-        // AnimationControllerを使用してフェードイン
-        const controller = getAnimationController();
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent && controller.isAnimationEnabled()) {
-            controller.scaleIn(modalContent, 300);
+        // AnimationControllerを使用してフェードイン（利用可能な場合のみ）
+        try {
+            const controller = getAnimationController();
+            const modalContent = modal.querySelector('.modal-content');
+            const isAnimationsDisabled = document.body.classList.contains('animations-disabled');
+            const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            console.log(`アニメーション処理: ${modalId}`, {
+                controller: !!controller,
+                modalContent: !!modalContent,
+                isAnimationEnabled: controller ? controller.isAnimationEnabled() : 'N/A',
+                animationsDisabled: isAnimationsDisabled,
+                prefersReducedMotion: prefersReducedMotion
+            });
+            
+            if (modalContent && controller && controller.isAnimationEnabled() && !isAnimationsDisabled && !prefersReducedMotion) {
+                console.log(`アニメーション実行: ${modalId}`);
+                controller.scaleIn(modalContent, 300);
+            } else {
+                console.log(`アニメーションスキップ: ${modalId}`);
+                // アニメーション無効時は即座に表示状態にする
+                if (modalContent) {
+                    modalContent.style.transform = 'scale(1)';
+                    modalContent.style.opacity = '1';
+                }
+            }
+        } catch (error) {
+            console.warn('AnimationController使用中にエラーが発生:', error);
+            // エラー時も表示状態にする
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+            }
         }
         
-        // AccessibilityManagerを使用してフォーカストラップを設定
-        const accessibilityManager = getAccessibilityManager();
-        accessibilityManager.trapFocus(modal);
-        
-        // スクリーンリーダーにモーダル表示をアナウンス
-        const modalTitle = modal.querySelector('.modal-header h3');
-        if (modalTitle) {
-            accessibilityManager.announceToScreenReader(`モーダルダイアログが開きました: ${modalTitle.textContent}`);
+        // AccessibilityManagerを使用してフォーカストラップを設定（利用可能な場合のみ）
+        try {
+            const accessibilityManager = getAccessibilityManager();
+            if (accessibilityManager) {
+                accessibilityManager.trapFocus(modal);
+                
+                // スクリーンリーダーにモーダル表示をアナウンス
+                const modalTitle = modal.querySelector('.modal-header h3');
+                if (modalTitle) {
+                    accessibilityManager.announceToScreenReader(`モーダルダイアログが開きました: ${modalTitle.textContent}`);
+                }
+            }
+        } catch (error) {
+            console.warn('AccessibilityManager使用中にエラーが発生:', error);
         }
 
         // モーダル外クリックで閉じる機能
@@ -3376,7 +3433,7 @@ function showModal(modalId) {
             button.addEventListener('click', handleCloseClick);
         });
 
-
+        console.log(`showModal完了: ${modalId}`);
         return true;
     } catch (error) {
         console.error(`モーダル表示中にエラーが発生: ${modalId}`, error);
@@ -3397,34 +3454,81 @@ function hideModal(modalId) {
             return false;
         }
 
-        // AccessibilityManagerを使用してフォーカストラップを解除
-        const accessibilityManager = getAccessibilityManager();
-        accessibilityManager.releaseFocusTrap();
+        // AccessibilityManagerを使用してフォーカストラップを解除（利用可能な場合のみ）
+        try {
+            const accessibilityManager = getAccessibilityManager();
+            if (accessibilityManager) {
+                accessibilityManager.releaseFocusTrap();
+            }
+        } catch (error) {
+            console.warn('AccessibilityManager使用中にエラーが発生:', error);
+        }
         
-        // AnimationControllerを使用してフェードアウト
-        const controller = getAnimationController();
-        const modalContent = modal.querySelector('.modal-content');
-        
-        if (modalContent && controller.isAnimationEnabled()) {
-            // アニメーション後にモーダルを非表示
-            controller.fadeOut(modalContent, 200).then(() => {
+        // AnimationControllerを使用してフェードアウト（利用可能な場合のみ）
+        let animationCompleted = false;
+        try {
+            const controller = getAnimationController();
+            const modalContent = modal.querySelector('.modal-content');
+            
+            if (modalContent && controller && controller.isAnimationEnabled()) {
+                // アニメーション後にモーダルを非表示
+                controller.fadeOut(modalContent, 200).then(() => {
+                    if (!animationCompleted) {
+                        animationCompleted = true;
+                        modal.style.display = 'none';
+                        modal.style.opacity = '0';
+                        modal.style.visibility = 'hidden';
+                        modal.classList.remove('show');
+                        modal.setAttribute('aria-hidden', 'true');
+                    }
+                });
+            } else {
+                // アニメーション無効時またはコントローラー利用不可時は即座に非表示
+                console.log(`アニメーション無効またはコントローラー利用不可: ${modalId}`);
+                animationCompleted = true;
                 modal.style.display = 'none';
                 modal.style.opacity = '0';
                 modal.style.visibility = 'hidden';
                 modal.classList.remove('show');
                 modal.setAttribute('aria-hidden', 'true');
-            });
-        } else {
-            // アニメーション無効時は即座に非表示
-            modal.style.display = 'none';
-            modal.style.opacity = '0';
-            modal.style.visibility = 'hidden';
-            modal.classList.remove('show');
-            modal.setAttribute('aria-hidden', 'true');
+                
+                // モーダルコンテンツのスタイルもリセット
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.style.transform = '';
+                    modalContent.style.opacity = '';
+                }
+            }
+        } catch (error) {
+            console.warn('AnimationController使用中にエラーが発生:', error);
+            // エラー時は即座に非表示
+            if (!animationCompleted) {
+                console.log(`エラー時の強制非表示: ${modalId}`);
+                animationCompleted = true;
+                modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // モーダルコンテンツのスタイルもリセット
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.style.transform = '';
+                    modalContent.style.opacity = '';
+                }
+            }
         }
         
-        // スクリーンリーダーにモーダル閉じるをアナウンス
-        accessibilityManager.announceToScreenReader('モーダルダイアログが閉じられました');
+        // スクリーンリーダーにモーダル閉じるをアナウンス（利用可能な場合のみ）
+        try {
+            const accessibilityManager = getAccessibilityManager();
+            if (accessibilityManager) {
+                accessibilityManager.announceToScreenReader('モーダルダイアログが閉じられました');
+            }
+        } catch (error) {
+            console.warn('AccessibilityManager使用中にエラーが発生:', error);
+        }
 
         // ESCキーイベントリスナーを削除
         const handleEscapeKey = function(e) {
