@@ -3005,6 +3005,9 @@ function createProjectCard(project) {
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     
+    // CIステータスを取得
+    const ciStatus = DataManager.getLatestCIStatusByProjectId(project.id);
+    
     // アクセシビリティ情報を構築
     const ciStatusText = ciStatus ? (ciStatus === 'pass' ? '成功' : '失敗') : '不明';
     const reviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
@@ -3033,7 +3036,6 @@ function createProjectCard(project) {
     cardHeader.appendChild(titleContainer);
     
     // CIステータスバッジ
-    const ciStatus = DataManager.getLatestCIStatusByProjectId(project.id);
     if (ciStatus) {
         const statusBadge = document.createElement('span');
         statusBadge.className = `badge ci-status ci-status-${ciStatus}`;
@@ -3069,7 +3071,6 @@ function createProjectCard(project) {
     reviewLabel.textContent = 'レビュー指摘数:';
     const reviewValue = document.createElement('span');
     reviewValue.className = 'meta-value';
-    const reviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
     reviewValue.textContent = formatNumber(reviewCount);
     reviewCountRow.appendChild(reviewLabel);
     reviewCountRow.appendChild(reviewValue);
@@ -3182,8 +3183,8 @@ function createProjectTableRow(project) {
     
     // レビュー指摘数
     const reviewCountCell = document.createElement('td');
-    const reviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
-    reviewCountCell.textContent = formatNumber(reviewCount);
+    const projectReviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
+    reviewCountCell.textContent = formatNumber(projectReviewCount);
     row.appendChild(reviewCountCell);
     
     // タスク完了率
@@ -3232,36 +3233,79 @@ function navigateToProjectDetail(projectId) {
 
 // プロジェクト一覧ページのイベントリスナーを設定
 function setupProjectListEventListeners() {
+    console.log('setupProjectListEventListeners: 開始');
+    
     // プロジェクト追加ボタン
     const addProjectBtn = document.getElementById('add-project-btn');
     if (addProjectBtn) {
+        console.log('プロジェクト追加ボタンが見つかりました');
         addProjectBtn.addEventListener('click', () => {
+            console.log('プロジェクト追加ボタンがクリックされました');
             showModal('add-project-modal');
         });
+    } else {
+        console.error('プロジェクト追加ボタンが見つかりません: add-project-btn');
     }
     
     // データエクスポートボタン
     const exportDataBtn = document.getElementById('export-data-btn');
     if (exportDataBtn) {
+        console.log('データエクスポートボタンが見つかりました');
         exportDataBtn.addEventListener('click', () => {
+            console.log('データエクスポートボタンがクリックされました');
             exportData();
         });
+    } else {
+        console.error('データエクスポートボタンが見つかりません: export-data-btn');
+    }
+    
+    // モバイル版プロジェクト追加ボタン
+    const mobileAddProjectBtn = document.getElementById('mobile-add-project-btn');
+    if (mobileAddProjectBtn) {
+        console.log('モバイル版プロジェクト追加ボタンが見つかりました');
+        mobileAddProjectBtn.addEventListener('click', () => {
+            console.log('モバイル版プロジェクト追加ボタンがクリックされました');
+            showModal('add-project-modal');
+        });
+    } else {
+        console.error('モバイル版プロジェクト追加ボタンが見つかりません: mobile-add-project-btn');
+    }
+    
+    // モバイル版データエクスポートボタン
+    const mobileExportDataBtn = document.getElementById('mobile-export-data-btn');
+    if (mobileExportDataBtn) {
+        console.log('モバイル版データエクスポートボタンが見つかりました');
+        mobileExportDataBtn.addEventListener('click', () => {
+            console.log('モバイル版データエクスポートボタンがクリックされました');
+            exportData();
+        });
+    } else {
+        console.error('モバイル版データエクスポートボタンが見つかりません: mobile-export-data-btn');
     }
     
     // プロジェクト追加フォーム
     const addProjectForm = document.getElementById('add-project-form');
     if (addProjectForm) {
+        console.log('プロジェクト追加フォームが見つかりました');
         addProjectForm.addEventListener('submit', handleAddProjectSubmit);
+    } else {
+        console.error('プロジェクト追加フォームが見つかりません: add-project-form');
     }
     
     // プロジェクト追加モーダルのキャンセルボタン
     const cancelAddProjectBtn = document.getElementById('cancel-add-project');
     if (cancelAddProjectBtn) {
+        console.log('キャンセルボタンが見つかりました');
         cancelAddProjectBtn.addEventListener('click', () => {
+            console.log('キャンセルボタンがクリックされました');
             hideModal('add-project-modal');
             resetAddProjectForm();
         });
+    } else {
+        console.error('キャンセルボタンが見つかりません: cancel-add-project');
     }
+    
+    console.log('setupProjectListEventListeners: 完了');
 }
 
 // ========================================
