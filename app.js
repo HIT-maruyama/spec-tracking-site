@@ -2378,6 +2378,9 @@ function loadReviewFindingsTab(projectId) {
         // フィルタコントロールを初期化
         initializeFilterControls();
         
+        // レビュー指摘テーブルのボタンイベントを設定
+        setupReviewFindingTableEvents();
+        
     } catch (error) {
         console.error('レビュー指摘タブの読み込み中にエラーが発生:', error);
         ErrorHandler.handleUnexpectedError(error, 'レビュー指摘タブ読み込み');
@@ -2546,8 +2549,8 @@ function generateTableRow(finding) {
             <td>${finding.reviewer ? escapeHtml(finding.reviewer) : '-'}</td>
             <td>${finding.assignee ? escapeHtml(finding.assignee) : '-'}</td>
             <td class="action-buttons">
-                <button class="btn btn-primary btn-small" onclick="editReviewFinding('${finding.id}')">編集</button>
-                <button class="btn btn-danger btn-small" onclick="deleteReviewFinding('${finding.id}')">削除</button>
+                <button class="btn btn-primary btn-small edit-review-btn" data-finding-id="${finding.id}">編集</button>
+                <button class="btn btn-danger btn-small delete-review-btn" data-finding-id="${finding.id}">削除</button>
             </td>
         </tr>
     `;
@@ -3311,23 +3314,20 @@ function showModal(modalId) {
         const modal = document.getElementById(modalId);
         if (!modal) {
             console.error(`モーダルが見つかりません: ${modalId}`);
+    
             return false;
         }
 
         // モーダルを表示
-        console.log(`モーダル要素:`, modal);
-        console.log(`モーダルの現在のスタイル:`, modal.style.cssText);
-        console.log(`モーダルの現在のクラス:`, modal.className);
         
+        // インラインスタイルのdisplay:noneを削除してからflexを設定
+        modal.style.removeProperty('display');
         modal.style.display = 'flex';
         modal.style.opacity = '1';
         modal.style.visibility = 'visible';
         modal.classList.add('show');
         modal.setAttribute('aria-hidden', 'false');
-        
-        console.log(`モーダル表示後のスタイル:`, modal.style.cssText);
-        console.log(`モーダル表示後のクラス:`, modal.className);
-        console.log(`モーダルの計算されたスタイル:`, window.getComputedStyle(modal).display, window.getComputedStyle(modal).opacity, window.getComputedStyle(modal).visibility);
+
         
         // AnimationControllerを使用してフェードイン
         const controller = getAnimationController();
@@ -3376,7 +3376,7 @@ function showModal(modalId) {
             button.addEventListener('click', handleCloseClick);
         });
 
-        console.log(`モーダルを表示しました: ${modalId}`);
+
         return true;
     } catch (error) {
         console.error(`モーダル表示中にエラーが発生: ${modalId}`, error);
@@ -5034,7 +5034,7 @@ function editReviewFinding(findingId) {
         document.getElementById('edit-review-assignee').value = finding.assignee || '';
         
         // モーダルを表示
-        modal.style.display = 'block';
+        showModal('edit-review-finding-modal');
         
     } catch (error) {
         console.error('レビュー指摘編集モーダル表示中にエラーが発生:', error);
@@ -5111,10 +5111,7 @@ function deleteReviewFinding(findingId) {
         window.deleteTargetFindingId = findingId;
         
         // 削除確認モーダルを表示
-        const modal = document.getElementById('delete-review-finding-modal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
+        showModal('delete-review-finding-modal');
         
     } catch (error) {
         console.error('レビュー指摘削除確認モーダル表示中にエラーが発生:', error);
@@ -5340,6 +5337,31 @@ function getSelectedValues(selectId) {
     } catch (error) {
         console.error('選択値取得中にエラーが発生:', error);
         return [];
+    }
+}
+
+// レビュー指摘テーブルのイベントを設定
+function setupReviewFindingTableEvents() {
+    const container = document.getElementById('review-findings-container');
+    if (!container) return;
+    
+    // 既存のイベントリスナーを削除
+    container.removeEventListener('click', handleReviewFindingTableClick);
+    
+    // 新しいイベントリスナーを追加
+    container.addEventListener('click', handleReviewFindingTableClick);
+}
+
+// レビュー指摘テーブルのクリックイベントハンドラー
+function handleReviewFindingTableClick(event) {
+    const target = event.target;
+    
+    if (target.classList.contains('edit-review-btn')) {
+        const findingId = target.getAttribute('data-finding-id');
+        editReviewFinding(findingId);
+    } else if (target.classList.contains('delete-review-btn')) {
+        const findingId = target.getAttribute('data-finding-id');
+        deleteReviewFinding(findingId);
     }
 }
 
