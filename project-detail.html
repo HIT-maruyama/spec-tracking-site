@@ -8,13 +8,65 @@
 </head>
 <body>
     <header>
-        <h1>仕様駆動開発管理サイト</h1>
-        <nav>
-            <a href="index.html" class="btn btn-secondary">一覧に戻る</a>
+        <div class="header-content">
+            <h1>仕様駆動開発管理サイト</h1>
+            
+            <!-- モバイルハンバーガーメニューボタン -->
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="メニューを開く" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <!-- デスクトップナビゲーション -->
+            <nav class="desktop-nav">
+                <button id="theme-toggle" class="theme-toggle" aria-label="テーマ切り替え" title="ダークモード切り替え">
+                    🌙
+                </button>
+                <a href="index.html" class="nav-link">
+                    <span class="nav-icon">←</span>
+                    一覧に戻る
+                </a>
+            </nav>
+        </div>
+        
+        <!-- モバイルナビゲーションメニュー -->
+        <nav id="mobile-nav" class="mobile-nav" aria-hidden="true">
+            <div class="mobile-nav-content">
+                <button id="mobile-theme-toggle" class="mobile-nav-item theme-toggle-mobile" aria-label="テーマ切り替え">
+                    <span class="nav-icon">🌙</span>
+                    <span class="nav-text">ダークモード切り替え</span>
+                </button>
+                <a href="index.html" class="mobile-nav-item nav-link-mobile">
+                    <span class="nav-icon">←</span>
+                    <span class="nav-text">一覧に戻る</span>
+                </a>
+            </div>
         </nav>
+        
+        <!-- モバイルナビゲーション背景オーバーレイ -->
+        <div id="mobile-nav-overlay" class="mobile-nav-overlay" aria-hidden="true"></div>
     </header>
 
     <main>
+        <!-- ブレッドクラムナビゲーション -->
+        <nav class="breadcrumb" aria-label="ブレッドクラム">
+            <div class="breadcrumb-item">
+                <span class="breadcrumb-icon">🏠</span>
+                <a href="index.html" class="breadcrumb-link">ホーム</a>
+            </div>
+            <span class="breadcrumb-separator">›</span>
+            <div class="breadcrumb-item">
+                <span class="breadcrumb-icon">📋</span>
+                <a href="index.html" class="breadcrumb-link">プロジェクト一覧</a>
+            </div>
+            <span class="breadcrumb-separator">›</span>
+            <div class="breadcrumb-item">
+                <span class="breadcrumb-icon">📊</span>
+                <span class="breadcrumb-current" id="breadcrumb-project-name">プロジェクト詳細</span>
+            </div>
+        </nav>
+
         <!-- プロジェクト情報セクション -->
         <section id="project-info-section">
             <div class="project-header">
@@ -33,9 +85,18 @@
         <!-- タブナビゲーション -->
         <section id="tabs-section">
             <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="ci-results">CI結果</button>
-                <button class="tab-btn" data-tab="review-findings">レビュー指摘</button>
-                <button class="tab-btn" data-tab="effect-metrics">効果メトリクス</button>
+                <button class="tab-btn active" data-tab="ci-results">
+                    <span class="tab-icon">🔧</span>
+                    CI結果
+                </button>
+                <button class="tab-btn" data-tab="review-findings">
+                    <span class="tab-icon">📝</span>
+                    レビュー指摘
+                </button>
+                <button class="tab-btn" data-tab="effect-metrics">
+                    <span class="tab-icon">📊</span>
+                    効果メトリクス
+                </button>
             </div>
 
             <!-- CI結果タブ -->

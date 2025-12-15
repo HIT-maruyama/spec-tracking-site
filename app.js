@@ -1898,8 +1898,56 @@ class DataManager {
 }
 
 // ========================================
+// ナビゲーション状態管理
+// ========================================
+
+/**
+ * 現在のページに基づいてナビゲーション状態を更新
+ */
+function updateNavigationState() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        
+        // リンクのhref属性と現在のパスを比較
+        const linkPath = link.getAttribute('href');
+        if (linkPath) {
+            // 相対パスを絶対パスに変換して比較
+            const linkUrl = new URL(linkPath, window.location.origin);
+            if (linkUrl.pathname === currentPath) {
+                link.classList.add('active');
+            }
+        }
+    });
+}
+
+/**
+ * ページ遷移時のナビゲーション状態更新
+ */
+function initializeNavigationState() {
+    // 初期状態を設定
+    updateNavigationState();
+    
+    // ページ遷移を監視（SPAの場合）
+    window.addEventListener('popstate', updateNavigationState);
+    
+    // ナビゲーションリンクのクリック時に状態を更新
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.nav-link') || e.target.closest('.nav-link')) {
+            // 少し遅延してから状態を更新（ページ遷移後）
+            setTimeout(updateNavigationState, 100);
+        }
+    });
+}
+
+// ========================================
 // アプリケーション初期化
 document.addEventListener('DOMContentLoaded', function() {
+    // ナビゲーション状態の初期化
+    initializeNavigationState();
+    
     // 現在のページを判定して適切な初期化を実行
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
@@ -1989,8 +2037,24 @@ async function initializeProjectDetailPage() {
 }
 
 // プロジェクト情報を表示
+/**
+ * ブレッドクラムのプロジェクト名を更新
+ * @param {string} projectName - プロジェクト名
+ */
+function updateBreadcrumb(projectName) {
+    const breadcrumbProjectName = document.getElementById('breadcrumb-project-name');
+    if (breadcrumbProjectName && projectName) {
+        breadcrumbProjectName.textContent = projectName;
+        // ページタイトルも更新
+        document.title = `${projectName} - 仕様駆動開発管理サイト`;
+    }
+}
+
 function displayProjectInfo(project) {
     try {
+        // ブレッドクラムを更新
+        updateBreadcrumb(project.name);
+        
         // プロジェクトタイトルを更新
         const projectTitle = document.getElementById('project-title');
         if (projectTitle) {
@@ -2046,24 +2110,98 @@ function displayProjectInfo(project) {
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
+    const tabNavigation = document.querySelector('.tab-navigation');
     
-    tabButtons.forEach(button => {
+    // タブインジケーターの位置を更新する関数
+    function updateTabIndicator(activeButton) {
+        if (!tabNavigation || !activeButton) return;
+        
+        const buttonRect = activeButton.getBoundingClientRect();
+        const navRect = tabNavigation.getBoundingClientRect();
+        const left = buttonRect.left - navRect.left;
+        const width = buttonRect.width;
+        
+        // インジケーターの位置を更新
+        const indicator = tabNavigation.querySelector('::after') || tabNavigation;
+        if (indicator) {
+            tabNavigation.style.setProperty('--indicator-left', `${left}px`);
+            tabNavigation.style.setProperty('--indicator-width', `${width}px`);
+        }
+    }
+    
+    tabButtons.forEach((button, index) => {
         button.addEventListener('click', function() {
             const targetTab = this.getAttribute('data-tab');
             
-            // すべてのタブボタンとコンテンツから active クラスを削除
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+            // 現在アクティブなコンテンツを取得
+            const currentActiveContent = document.querySelector('.tab-content.active');
             
-            // クリックされたタブボタンと対応するコンテンツに active クラスを追加
+            // すべてのタブボタンから active クラスを削除
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // クリックされたタブボタンに active クラスを追加
             this.classList.add('active');
-            const targetTabContent = document.getElementById(targetTab + '-tab');
-            if (targetTabContent) {
-                targetTabContent.classList.add('active');
+            
+            // タブインジケーターの位置を更新
+            updateTabIndicator(this);
+            
+            // 現在のコンテンツをフェードアウト
+            if (currentActiveContent) {
+                currentActiveContent.classList.add('slide-out');
                 
-                // タブ切り替え時にコンテンツを更新
-                updateTabContent(targetTab);
+                setTimeout(() => {
+                    // すべてのコンテンツから active クラスを削除
+                    tabContents.forEach(content => {
+                        content.classList.remove('active', 'slide-in', 'slide-out');
+                    });
+                    
+                    // 新しいコンテンツを表示
+                    const targetTabContent = document.getElementById(targetTab + '-tab');
+                    if (targetTabContent) {
+                        targetTabContent.classList.add('active', 'slide-in');
+                        
+                        // タブ切り替え時にコンテンツを更新
+                        updateTabContent(targetTab);
+                    }
+                }, 150); // アニメーション時間の半分
+            } else {
+                // 初回表示の場合
+                tabContents.forEach(content => content.classList.remove('active'));
+                const targetTabContent = document.getElementById(targetTab + '-tab');
+                if (targetTabContent) {
+                    targetTabContent.classList.add('active');
+                    updateTabContent(targetTab);
+                }
             }
+        });
+        
+        // キーボードナビゲーション対応
+        button.addEventListener('keydown', function(e) {
+            let newIndex = index;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    newIndex = index > 0 ? index - 1 : tabButtons.length - 1;
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    newIndex = index < tabButtons.length - 1 ? index + 1 : 0;
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    newIndex = 0;
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    newIndex = tabButtons.length - 1;
+                    break;
+                default:
+                    return;
+            }
+            
+            tabButtons[newIndex].focus();
+            tabButtons[newIndex].click();
         });
     });
     
@@ -2072,7 +2210,16 @@ function initializeTabs() {
     if (activeTab) {
         const targetTab = activeTab.getAttribute('data-tab');
         updateTabContent(targetTab);
+        updateTabIndicator(activeTab);
     }
+    
+    // ウィンドウリサイズ時にインジケーターの位置を更新
+    window.addEventListener('resize', () => {
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab) {
+            updateTabIndicator(activeTab);
+        }
+    });
 }
 
 // タブコンテンツを更新
@@ -2156,6 +2303,25 @@ function loadReviewFindingsTab(projectId) {
             // レビュー指摘テーブルを生成
             const tableHTML = generateReviewFindingsTable(reviewFindings);
             container.innerHTML = tableHTML;
+            
+            // ソートクラスを更新
+            setTimeout(() => {
+                updateSortClasses();
+                setupTableScrollHandlers();
+                
+                // 仮想スクロールデータを更新（該当する場合）
+                if (window.updateVirtualScrollData && reviewFindings.length > 100) {
+                    let sortedFindings = [...reviewFindings];
+                    if (window.currentSort && window.currentSort.column) {
+                        sortedFindings = sortReviewFindings(sortedFindings, window.currentSort.column, window.currentSort.direction);
+                    } else {
+                        sortedFindings = sortedFindings.sort((a, b) => 
+                            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                        );
+                    }
+                    window.updateVirtualScrollData(sortedFindings);
+                }
+            }, 0);
         }
         
         // フィルタコントロールを初期化
@@ -2246,7 +2412,7 @@ function generateCIResultsTable(ciResults) {
     return tableHTML;
 }
 
-// レビュー指摘テーブルを生成
+// レビュー指摘テーブルを生成（仮想スクロール対応）
 function generateReviewFindingsTable(reviewFindings) {
     // 現在のソート設定を適用
     let sortedFindings = [...reviewFindings];
@@ -2259,6 +2425,13 @@ function generateReviewFindingsTable(reviewFindings) {
         );
     }
     
+    // 大量データの場合は仮想スクロールを使用
+    const VIRTUAL_SCROLL_THRESHOLD = 100;
+    if (sortedFindings.length > VIRTUAL_SCROLL_THRESHOLD) {
+        return generateVirtualScrollTable(sortedFindings);
+    }
+    
+    // 通常のテーブル生成
     let tableHTML = `
         <table class="data-table review-findings-table">
             <thead>
@@ -2295,25 +2468,7 @@ function generateReviewFindingsTable(reviewFindings) {
     `;
     
     sortedFindings.forEach(finding => {
-        tableHTML += `
-            <tr>
-                <td>${formatDateTime(finding.timestamp)}</td>
-                <td>${escapeHtml(finding.process)}</td>
-                <td>${escapeHtml(finding.docType)}</td>
-                <td>${escapeHtml(finding.category)}</td>
-                <td>${escapeHtml(finding.rootCause)}</td>
-                <td><span class="severity-${finding.severity}">${escapeHtml(finding.severity)}</span></td>
-                <td><span class="status-${finding.status.toLowerCase()}">${escapeHtml(finding.status)}</span></td>
-                <td class="description-cell" title="${escapeHtml(finding.description)}">${escapeHtml(finding.description)}</td>
-                <td>${formatDocRef(finding.docRef)}</td>
-                <td>${finding.reviewer ? escapeHtml(finding.reviewer) : '-'}</td>
-                <td>${finding.assignee ? escapeHtml(finding.assignee) : '-'}</td>
-                <td class="action-buttons">
-                    <button class="btn btn-primary btn-small" onclick="editReviewFinding('${finding.id}')">編集</button>
-                    <button class="btn btn-danger btn-small" onclick="deleteReviewFinding('${finding.id}')">削除</button>
-                </td>
-            </tr>
-        `;
+        tableHTML += generateTableRow(finding);
     });
     
     tableHTML += `
@@ -2322,6 +2477,146 @@ function generateReviewFindingsTable(reviewFindings) {
     `;
     
     return tableHTML;
+}
+
+// テーブル行を生成
+function generateTableRow(finding) {
+    return `
+        <tr>
+            <td>${formatDateTime(finding.timestamp)}</td>
+            <td>${escapeHtml(finding.process)}</td>
+            <td>${escapeHtml(finding.docType)}</td>
+            <td>${escapeHtml(finding.category)}</td>
+            <td>${escapeHtml(finding.rootCause)}</td>
+            <td><span class="severity-${finding.severity}">${escapeHtml(finding.severity)}</span></td>
+            <td><span class="status-${finding.status.toLowerCase()}">${escapeHtml(finding.status)}</span></td>
+            <td class="description-cell" title="${escapeHtml(finding.description)}">${escapeHtml(finding.description)}</td>
+            <td>${formatDocRef(finding.docRef)}</td>
+            <td>${finding.reviewer ? escapeHtml(finding.reviewer) : '-'}</td>
+            <td>${finding.assignee ? escapeHtml(finding.assignee) : '-'}</td>
+            <td class="action-buttons">
+                <button class="btn btn-primary btn-small" onclick="editReviewFinding('${finding.id}')">編集</button>
+                <button class="btn btn-danger btn-small" onclick="deleteReviewFinding('${finding.id}')">削除</button>
+            </td>
+        </tr>
+    `;
+}
+
+// 仮想スクロールテーブルを生成
+function generateVirtualScrollTable(sortedFindings) {
+    const ROW_HEIGHT = 60; // 行の高さ（px）
+    const VISIBLE_ROWS = 20; // 表示する行数
+    const BUFFER_ROWS = 5; // バッファ行数
+    
+    // 仮想スクロールコンテナを作成
+    const virtualScrollHTML = `
+        <div class="virtual-scroll-container" style="height: ${VISIBLE_ROWS * ROW_HEIGHT}px; overflow-y: auto; position: relative;">
+            <div class="virtual-scroll-spacer" style="height: ${sortedFindings.length * ROW_HEIGHT}px; position: relative;">
+                <table class="data-table review-findings-table virtual-scroll-table" style="position: absolute; top: 0; width: 100%;">
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th class="sortable" data-column="timestamp">
+                                日時 ${getSortIcon('timestamp')}
+                            </th>
+                            <th class="sortable" data-column="process">
+                                プロセス ${getSortIcon('process')}
+                            </th>
+                            <th class="sortable" data-column="docType">
+                                ドキュメント種別 ${getSortIcon('docType')}
+                            </th>
+                            <th class="sortable" data-column="category">
+                                カテゴリ ${getSortIcon('category')}
+                            </th>
+                            <th class="sortable" data-column="rootCause">
+                                根本原因 ${getSortIcon('rootCause')}
+                            </th>
+                            <th class="sortable" data-column="severity">
+                                重要度 ${getSortIcon('severity')}
+                            </th>
+                            <th class="sortable" data-column="status">
+                                ステータス ${getSortIcon('status')}
+                            </th>
+                            <th>内容</th>
+                            <th>ファイル</th>
+                            <th>レビュアー</th>
+                            <th>担当者</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="virtual-scroll-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="virtual-scroll-info">
+            <small class="text-secondary">
+                ${sortedFindings.length}件中 最大${VISIBLE_ROWS}件を表示（仮想スクロール）
+            </small>
+        </div>
+    `;
+    
+    // 仮想スクロールの初期化を遅延実行
+    setTimeout(() => {
+        initializeVirtualScroll(sortedFindings, ROW_HEIGHT, VISIBLE_ROWS, BUFFER_ROWS);
+    }, 0);
+    
+    return virtualScrollHTML;
+}
+
+// 仮想スクロールを初期化
+function initializeVirtualScroll(data, rowHeight, visibleRows, bufferRows) {
+    try {
+        const container = document.querySelector('.virtual-scroll-container');
+        const tbody = document.querySelector('.virtual-scroll-tbody');
+        const table = document.querySelector('.virtual-scroll-table');
+        
+        if (!container || !tbody || !table) return;
+        
+        let startIndex = 0;
+        let endIndex = Math.min(visibleRows + bufferRows, data.length);
+        
+        function updateVisibleRows() {
+            const scrollTop = container.scrollTop;
+            const newStartIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - bufferRows);
+            const newEndIndex = Math.min(data.length, newStartIndex + visibleRows + (bufferRows * 2));
+            
+            if (newStartIndex !== startIndex || newEndIndex !== endIndex) {
+                startIndex = newStartIndex;
+                endIndex = newEndIndex;
+                
+                // テーブル位置を調整
+                table.style.top = `${startIndex * rowHeight}px`;
+                
+                // 表示行を更新
+                let rowsHTML = '';
+                for (let i = startIndex; i < endIndex; i++) {
+                    if (data[i]) {
+                        rowsHTML += generateTableRow(data[i]);
+                    }
+                }
+                tbody.innerHTML = rowsHTML;
+            }
+        }
+        
+        // 初期表示
+        updateVisibleRows();
+        
+        // スクロールイベントリスナー
+        container.addEventListener('scroll', updateVisibleRows);
+        
+        // データ更新用の関数をグローバルに保存
+        window.updateVirtualScrollData = function(newData) {
+            data = newData;
+            const spacer = document.querySelector('.virtual-scroll-spacer');
+            if (spacer) {
+                spacer.style.height = `${data.length * rowHeight}px`;
+            }
+            updateVisibleRows();
+        };
+        
+    } catch (error) {
+        console.error('仮想スクロール初期化中にエラーが発生:', error);
+    }
 }
 
 // レビュー指摘のソート機能
@@ -2358,6 +2653,59 @@ function getSortIcon(column) {
     return window.currentSort.direction === 'asc' 
         ? '<span class="sort-icon">↑</span>' 
         : '<span class="sort-icon">↓</span>';
+}
+
+// テーブルヘッダーのソートクラスを更新
+function updateSortClasses() {
+    try {
+        // すべてのソート可能なヘッダーからソートクラスを削除
+        const sortableHeaders = document.querySelectorAll('.data-table th.sortable');
+        sortableHeaders.forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+        });
+        
+        // 現在のソート列にクラスを追加
+        if (window.currentSort && window.currentSort.column) {
+            const currentHeader = document.querySelector(
+                `.data-table th.sortable[data-column="${window.currentSort.column}"]`
+            );
+            if (currentHeader) {
+                const sortClass = window.currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc';
+                currentHeader.classList.add(sortClass);
+            }
+        }
+    } catch (error) {
+        console.error('ソートクラス更新中にエラーが発生:', error);
+    }
+}
+
+// テーブルのスクロール状態を管理
+function setupTableScrollHandlers() {
+    try {
+        const tableContainers = document.querySelectorAll('.table-container');
+        
+        tableContainers.forEach(container => {
+            // スクロール可能かどうかを判定
+            function updateScrollState() {
+                const isScrollable = container.scrollWidth > container.clientWidth;
+                const isAtEnd = container.scrollLeft >= (container.scrollWidth - container.clientWidth - 5);
+                
+                container.classList.toggle('scrollable', isScrollable);
+                container.classList.toggle('scrolled-end', isAtEnd);
+            }
+            
+            // 初期状態を設定
+            updateScrollState();
+            
+            // スクロールイベントリスナーを追加
+            container.addEventListener('scroll', updateScrollState);
+            
+            // リサイズイベントリスナーを追加
+            window.addEventListener('resize', updateScrollState);
+        });
+    } catch (error) {
+        console.error('テーブルスクロールハンドラー設定中にエラーが発生:', error);
+    }
 }
 
 // テキストを切り詰める
@@ -2528,10 +2876,16 @@ function generateEffectMetricsDisplay(effectMetrics) {
 // 空状態の表示
 function showEmptyState() {
     const emptyState = document.getElementById('empty-state');
+    const projectGrid = document.getElementById('project-grid');
     const tableContainer = document.getElementById('project-table-container');
     
-    if (emptyState && tableContainer) {
+    if (emptyState) {
         emptyState.style.display = 'block';
+    }
+    if (projectGrid) {
+        projectGrid.style.display = 'none';
+    }
+    if (tableContainer) {
         tableContainer.style.display = 'none';
     }
 }
@@ -2539,11 +2893,17 @@ function showEmptyState() {
 // プロジェクト一覧の表示
 function showProjectList() {
     const emptyState = document.getElementById('empty-state');
+    const projectGrid = document.getElementById('project-grid');
     const tableContainer = document.getElementById('project-table-container');
     
-    if (emptyState && tableContainer) {
+    if (emptyState) {
         emptyState.style.display = 'none';
-        tableContainer.style.display = 'block';
+    }
+    if (projectGrid) {
+        projectGrid.style.display = 'grid';
+    }
+    if (tableContainer) {
+        tableContainer.style.display = 'none';
     }
 }
 
@@ -2557,9 +2917,9 @@ function loadAndDisplayProjects() {
             return;
         }
         
-        // プロジェクト一覧テーブルを表示
+        // プロジェクト一覧カードグリッドを表示
         showProjectList();
-        renderProjectTable(projects);
+        renderProjectCards(projects);
         
     } catch (error) {
         console.error('プロジェクト一覧の読み込みに失敗:', error);
@@ -2568,22 +2928,168 @@ function loadAndDisplayProjects() {
     }
 }
 
-// プロジェクト一覧テーブルをレンダリング
-function renderProjectTable(projects) {
-    const tableBody = document.getElementById('project-table-body');
-    if (!tableBody) {
-        console.error('プロジェクトテーブルのbody要素が見つかりません');
+// プロジェクト一覧カードをレンダリング
+function renderProjectCards(projects) {
+    const projectGrid = document.getElementById('project-grid');
+    if (!projectGrid) {
+        console.error('プロジェクトグリッド要素が見つかりません');
         return;
     }
     
-    // テーブルをクリア
-    tableBody.innerHTML = '';
+    // グリッドをクリア
+    projectGrid.innerHTML = '';
     
-    // 各プロジェクトの行を作成
+    // 各プロジェクトのカードを作成
     projects.forEach(project => {
-        const row = createProjectTableRow(project);
-        tableBody.appendChild(row);
+        const card = createProjectCard(project);
+        projectGrid.appendChild(card);
     });
+}
+
+// プロジェクトカードを作成
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'card project-card';
+    card.setAttribute('data-project-id', project.id);
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    
+    // アクセシビリティ情報を構築
+    const ciStatusText = ciStatus ? (ciStatus === 'pass' ? '成功' : '失敗') : '不明';
+    const reviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
+    const taskCompletion = project.effectMetrics?.efficiency?.taskCompletionRate;
+    const taskCompletionText = taskCompletion !== undefined ? `${taskCompletion}%` : '不明';
+    
+    const ariaLabel = `プロジェクト ${project.name}、フレームワーク ${project.framework}、CIステータス ${ciStatusText}、レビュー指摘数 ${reviewCount}件、タスク完了率 ${taskCompletionText}。クリックまたはEnterキーで詳細を表示`;
+    card.setAttribute('aria-label', ariaLabel);
+    
+    // カードヘッダー
+    const cardHeader = document.createElement('div');
+    cardHeader.className = 'card-header';
+    
+    const titleContainer = document.createElement('div');
+    
+    const projectName = document.createElement('h3');
+    projectName.className = 'card-title project-name';
+    projectName.textContent = project.name;
+    titleContainer.appendChild(projectName);
+    
+    const projectFramework = document.createElement('p');
+    projectFramework.className = 'card-subtitle project-framework';
+    projectFramework.textContent = project.framework;
+    titleContainer.appendChild(projectFramework);
+    
+    cardHeader.appendChild(titleContainer);
+    
+    // CIステータスバッジ
+    const ciStatus = DataManager.getLatestCIStatusByProjectId(project.id);
+    if (ciStatus) {
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `badge ci-status ci-status-${ciStatus}`;
+        statusBadge.textContent = ciStatus === 'pass' ? '成功' : '失敗';
+        statusBadge.setAttribute('aria-label', `CIステータス: ${ciStatus === 'pass' ? '成功' : '失敗'}`);
+        cardHeader.appendChild(statusBadge);
+    }
+    
+    card.appendChild(cardHeader);
+    
+    // カードコンテンツ - プロジェクトメタ情報
+    const cardContent = document.createElement('div');
+    cardContent.className = 'card-content project-meta';
+    
+    // 日付
+    const dateRow = document.createElement('div');
+    dateRow.className = 'meta-row';
+    const dateLabel = document.createElement('span');
+    dateLabel.className = 'meta-label';
+    dateLabel.textContent = '日付:';
+    const dateValue = document.createElement('span');
+    dateValue.className = 'meta-value';
+    dateValue.textContent = formatDate(project.date);
+    dateRow.appendChild(dateLabel);
+    dateRow.appendChild(dateValue);
+    cardContent.appendChild(dateRow);
+    
+    // レビュー指摘数
+    const reviewCountRow = document.createElement('div');
+    reviewCountRow.className = 'meta-row';
+    const reviewLabel = document.createElement('span');
+    reviewLabel.className = 'meta-label';
+    reviewLabel.textContent = 'レビュー指摘数:';
+    const reviewValue = document.createElement('span');
+    reviewValue.className = 'meta-value';
+    const reviewCount = DataManager.getReviewFindingCountByProjectId(project.id);
+    reviewValue.textContent = formatNumber(reviewCount);
+    reviewCountRow.appendChild(reviewLabel);
+    reviewCountRow.appendChild(reviewValue);
+    cardContent.appendChild(reviewCountRow);
+    
+    // タスク完了率
+    const taskCompletionRow = document.createElement('div');
+    taskCompletionRow.className = 'meta-row';
+    const taskLabel = document.createElement('span');
+    taskLabel.className = 'meta-label';
+    taskLabel.textContent = 'タスク完了率:';
+    const taskValue = document.createElement('span');
+    taskValue.className = 'meta-value';
+    if (project.effectMetrics && project.effectMetrics.efficiency && 
+        project.effectMetrics.efficiency.taskCompletionRate !== undefined) {
+        taskValue.textContent = formatPercentage(project.effectMetrics.efficiency.taskCompletionRate);
+    } else {
+        taskValue.textContent = '-';
+    }
+    taskCompletionRow.appendChild(taskLabel);
+    taskCompletionRow.appendChild(taskValue);
+    cardContent.appendChild(taskCompletionRow);
+    
+    card.appendChild(cardContent);
+    
+    // カードフッター - アクションボタン
+    const cardFooter = document.createElement('div');
+    cardFooter.className = 'card-footer';
+    
+    const actionsContainer = document.createElement('div');
+    actionsContainer.className = 'project-actions';
+    
+    const detailButton = document.createElement('button');
+    detailButton.className = 'btn btn-small btn-primary';
+    detailButton.textContent = '詳細表示';
+    detailButton.setAttribute('aria-label', `${project.name}の詳細を表示`);
+    detailButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateToProjectDetail(project.id);
+    });
+    actionsContainer.appendChild(detailButton);
+    
+    cardFooter.appendChild(actionsContainer);
+    card.appendChild(cardFooter);
+    
+    // カードクリックで詳細ページへ遷移
+    const handleCardClick = (e) => {
+        // ボタンクリックの場合は無視
+        if (e.target.closest('.btn')) {
+            return;
+        }
+        
+        // リップル効果を追加
+        addRippleEffect(card, e);
+        
+        // 少し遅延してから遷移（リップル効果を見せるため）
+        setTimeout(() => {
+            navigateToProjectDetail(project.id);
+        }, 150);
+    };
+    
+    card.addEventListener('click', handleCardClick);
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            // キーボード操作の場合は即座に遷移
+            navigateToProjectDetail(project.id);
+        }
+    });
+    
+    return card;
 }
 
 // プロジェクトテーブルの行を作成
@@ -2728,12 +3234,21 @@ function showModal(modalId) {
         modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
         
-        // フォーカス管理 - モーダル内の最初のフォーカス可能な要素にフォーカス
-        const focusableElements = modal.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusableElements.length > 0) {
-            focusableElements[0].focus();
+        // AnimationControllerを使用してフェードイン
+        const controller = getAnimationController();
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent && controller.isAnimationEnabled()) {
+            controller.scaleIn(modalContent, 300);
+        }
+        
+        // AccessibilityManagerを使用してフォーカストラップを設定
+        const accessibilityManager = getAccessibilityManager();
+        accessibilityManager.trapFocus(modal);
+        
+        // スクリーンリーダーにモーダル表示をアナウンス
+        const modalTitle = modal.querySelector('.modal-header h3');
+        if (modalTitle) {
+            accessibilityManager.announceToScreenReader(`モーダルダイアログが開きました: ${modalTitle.textContent}`);
         }
 
         // モーダル外クリックで閉じる機能
@@ -2787,15 +3302,28 @@ function hideModal(modalId) {
             return false;
         }
 
-        // モーダルを非表示
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
+        // AccessibilityManagerを使用してフォーカストラップを解除
+        const accessibilityManager = getAccessibilityManager();
+        accessibilityManager.releaseFocusTrap();
         
-        // フォーカスを元の要素に戻す（可能であれば）
-        const previouslyFocusedElement = document.activeElement;
-        if (previouslyFocusedElement && previouslyFocusedElement !== document.body) {
-            previouslyFocusedElement.blur();
+        // AnimationControllerを使用してフェードアウト
+        const controller = getAnimationController();
+        const modalContent = modal.querySelector('.modal-content');
+        
+        if (modalContent && controller.isAnimationEnabled()) {
+            // アニメーション後にモーダルを非表示
+            controller.fadeOut(modalContent, 200).then(() => {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            });
+        } else {
+            // アニメーション無効時は即座に非表示
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
         }
+        
+        // スクリーンリーダーにモーダル閉じるをアナウンス
+        accessibilityManager.announceToScreenReader('モーダルダイアログが閉じられました');
 
         // ESCキーイベントリスナーを削除
         const handleEscapeKey = function(e) {
@@ -2866,16 +3394,16 @@ function showMessage(message, type = 'success', duration = 3000) {
         // メッセージコンテナに追加
         messageContainer.appendChild(messageElement);
         
-        // アニメーション効果（フェードイン）
-        messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(-10px)';
+        // AnimationControllerを使用してスライドイン
+        const controller = getAnimationController();
+        if (controller.isAnimationEnabled()) {
+            controller.slideIn(messageElement, 'down', 300);
+        }
         
-        // 次のフレームでアニメーション開始
-        requestAnimationFrame(() => {
-            messageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            messageElement.style.opacity = '1';
-            messageElement.style.transform = 'translateY(0)';
-        });
+        // AccessibilityManagerを使用してスクリーンリーダーにアナウンス
+        const accessibilityManager = getAccessibilityManager();
+        const priority = type === 'error' ? 'assertive' : 'polite';
+        accessibilityManager.announceToScreenReader(message, priority);
 
         // 指定時間後に自動削除
         if (duration > 0) {
@@ -2902,17 +3430,20 @@ function removeMessage(messageElement) {
             return;
         }
 
-        // フェードアウトアニメーション
-        messageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(-10px)';
-        
-        // アニメーション完了後に要素を削除
-        setTimeout(() => {
+        // AnimationControllerを使用してフェードアウト
+        const controller = getAnimationController();
+        if (controller.isAnimationEnabled()) {
+            controller.fadeOut(messageElement, 300).then(() => {
+                if (messageElement.parentNode) {
+                    messageElement.parentNode.removeChild(messageElement);
+                }
+            });
+        } else {
+            // アニメーション無効時は即座に削除
             if (messageElement.parentNode) {
                 messageElement.parentNode.removeChild(messageElement);
             }
-        }, 300);
+        }
     } catch (error) {
         console.error('メッセージ削除中にエラーが発生:', error);
     }
@@ -4667,6 +5198,25 @@ function applyFilters() {
             } else {
                 const tableHTML = generateReviewFindingsTable(reviewFindings);
                 container.innerHTML = tableHTML;
+                
+                // ソートクラスを更新
+                setTimeout(() => {
+                    updateSortClasses();
+                    setupTableScrollHandlers();
+                    
+                    // 仮想スクロールデータを更新（該当する場合）
+                    if (window.updateVirtualScrollData && reviewFindings.length > 100) {
+                        let sortedFindings = [...reviewFindings];
+                        if (window.currentSort && window.currentSort.column) {
+                            sortedFindings = sortReviewFindings(sortedFindings, window.currentSort.column, window.currentSort.direction);
+                        } else {
+                            sortedFindings = sortedFindings.sort((a, b) => 
+                                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                            );
+                        }
+                        window.updateVirtualScrollData(sortedFindings);
+                    }
+                }, 0);
             }
         }
         
@@ -4740,6 +5290,9 @@ function toggleSort(column) {
         
         // フィルタを再適用（ソートも含む）
         applyFilters();
+        
+        // ソートクラスを更新
+        updateSortClasses();
         
     } catch (error) {
         console.error('ソート切り替え中にエラーが発生:', error);
@@ -4816,6 +5369,16 @@ function isModalOpen(modalId) {
         console.error('モーダル状態チェック中にエラーが発生:', error);
         return false;
     }
+}
+
+/**
+ * リップル効果を要素に追加（レガシー関数 - AnimationControllerを使用）
+ * @param {HTMLElement} element - リップル効果を適用する要素
+ * @param {Event} event - クリックイベント
+ */
+function addRippleEffect(element, event) {
+    const controller = getAnimationController();
+    controller.triggerRipple(element, event);
 }
 
 /**
@@ -4994,24 +5557,14 @@ function throttle(func, limit) {
 }
 
 /**
- * 要素のアニメーション
+ * 要素のアニメーション（レガシー関数 - AnimationControllerを使用）
  * @param {string|HTMLElement} element - アニメーション対象の要素IDまたは要素
  * @param {string} animationClass - アニメーションCSSクラス
  * @param {number} duration - アニメーション時間（ミリ秒）
  */
 function animateElement(element, animationClass, duration = 300) {
-    try {
-        const el = typeof element === 'string' ? document.getElementById(element) : element;
-        if (!el) return;
-
-        el.classList.add(animationClass);
-        
-        setTimeout(() => {
-            el.classList.remove(animationClass);
-        }, duration);
-    } catch (error) {
-        console.error('要素アニメーション中にエラーが発生:', error);
-    }
+    const controller = getAnimationController();
+    return controller.animateElement(element, animationClass, duration);
 }
 
 /**
@@ -5067,3 +5620,2139 @@ addKeyboardShortcut('s', () => {
 }, { ctrlKey: true });
 
 console.log('UI ヘルパー関数とキーボードショートカットが初期化されました');
+
+// ========================================
+// AnimationController クラス
+// ========================================
+
+/**
+ * マイクロインタラクションとアニメーションを管理するクラス
+ */
+class AnimationController {
+    constructor() {
+        this.animationsEnabled = true;
+        this.reducedMotionPreferred = false;
+        this.init();
+    }
+
+    /**
+     * 初期化処理
+     */
+    init() {
+        // システムのreduced-motion設定を検出
+        this.detectReducedMotionPreference();
+        
+        // メディアクエリの変更を監視
+        if (window.matchMedia) {
+            const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            mediaQuery.addEventListener('change', () => {
+                this.detectReducedMotionPreference();
+            });
+        }
+
+        // LocalStorageからアニメーション設定を読み込み
+        this.loadAnimationSettings();
+    }
+
+    /**
+     * reduced-motion設定を検出
+     */
+    detectReducedMotionPreference() {
+        if (window.matchMedia) {
+            this.reducedMotionPreferred = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        }
+    }
+
+    /**
+     * アニメーション設定をLocalStorageから読み込み
+     */
+    loadAnimationSettings() {
+        try {
+            const saved = localStorage.getItem('spec-tracking-site:animationsEnabled');
+            if (saved !== null) {
+                this.animationsEnabled = JSON.parse(saved);
+            }
+        } catch (error) {
+            console.error('アニメーション設定の読み込みに失敗:', error);
+        }
+    }
+
+    /**
+     * アニメーション設定をLocalStorageに保存
+     */
+    saveAnimationSettings() {
+        try {
+            localStorage.setItem('spec-tracking-site:animationsEnabled', JSON.stringify(this.animationsEnabled));
+        } catch (error) {
+            console.error('アニメーション設定の保存に失敗:', error);
+        }
+    }
+
+    /**
+     * アニメーションが有効かどうかを確認
+     * @returns {boolean} アニメーション有効フラグ
+     */
+    isAnimationEnabled() {
+        return this.animationsEnabled && !this.reducedMotionPreferred;
+    }
+
+    /**
+     * アニメーション有効/無効を設定
+     * @param {boolean} enabled - アニメーション有効フラグ
+     */
+    setAnimationEnabled(enabled) {
+        this.animationsEnabled = enabled;
+        this.saveAnimationSettings();
+        
+        // DOM要素にクラスを追加/削除してアニメーションを制御
+        if (enabled && !this.reducedMotionPreferred) {
+            document.body.classList.remove('animations-disabled');
+        } else {
+            document.body.classList.add('animations-disabled');
+        }
+    }
+
+    /**
+     * reduced-motion設定を尊重するかどうか
+     * @returns {boolean} reduced-motion設定
+     */
+    respectsReducedMotion() {
+        return this.reducedMotionPreferred;
+    }
+
+    /**
+     * 要素をフェードイン
+     * @param {HTMLElement} element - 対象要素
+     * @param {number} duration - アニメーション時間（ミリ秒）
+     * @returns {Promise<void>} アニメーション完了Promise
+     */
+    fadeIn(element, duration = 300) {
+        return new Promise((resolve) => {
+            if (!this.isAnimationEnabled()) {
+                element.style.opacity = '1';
+                resolve();
+                return;
+            }
+
+            element.style.opacity = '0';
+            element.style.transition = `opacity ${duration}ms ease-in`;
+            
+            // 次のフレームで実行（CSSトランジションを確実に適用）
+            requestAnimationFrame(() => {
+                element.style.opacity = '1';
+                
+                setTimeout(() => {
+                    element.style.transition = '';
+                    resolve();
+                }, duration);
+            });
+        });
+    }
+
+    /**
+     * 要素をフェードアウト
+     * @param {HTMLElement} element - 対象要素
+     * @param {number} duration - アニメーション時間（ミリ秒）
+     * @returns {Promise<void>} アニメーション完了Promise
+     */
+    fadeOut(element, duration = 300) {
+        return new Promise((resolve) => {
+            if (!this.isAnimationEnabled()) {
+                element.style.opacity = '0';
+                resolve();
+                return;
+            }
+
+            element.style.transition = `opacity ${duration}ms ease-out`;
+            element.style.opacity = '0';
+            
+            setTimeout(() => {
+                element.style.transition = '';
+                resolve();
+            }, duration);
+        });
+    }
+
+    /**
+     * 要素をスライドイン
+     * @param {HTMLElement} element - 対象要素
+     * @param {'up'|'down'|'left'|'right'} direction - スライド方向
+     * @param {number} duration - アニメーション時間（ミリ秒）
+     * @returns {Promise<void>} アニメーション完了Promise
+     */
+    slideIn(element, direction = 'up', duration = 300) {
+        return new Promise((resolve) => {
+            if (!this.isAnimationEnabled()) {
+                element.style.transform = 'translate(0, 0)';
+                element.style.opacity = '1';
+                resolve();
+                return;
+            }
+
+            // 初期位置を設定
+            let initialTransform;
+            switch (direction) {
+                case 'up':
+                    initialTransform = 'translateY(20px)';
+                    break;
+                case 'down':
+                    initialTransform = 'translateY(-20px)';
+                    break;
+                case 'left':
+                    initialTransform = 'translateX(20px)';
+                    break;
+                case 'right':
+                    initialTransform = 'translateX(-20px)';
+                    break;
+                default:
+                    initialTransform = 'translateY(20px)';
+            }
+
+            element.style.transform = initialTransform;
+            element.style.opacity = '0';
+            element.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+            
+            requestAnimationFrame(() => {
+                element.style.transform = 'translate(0, 0)';
+                element.style.opacity = '1';
+                
+                setTimeout(() => {
+                    element.style.transition = '';
+                    resolve();
+                }, duration);
+            });
+        });
+    }
+
+    /**
+     * 要素をスケールイン
+     * @param {HTMLElement} element - 対象要素
+     * @param {number} duration - アニメーション時間（ミリ秒）
+     * @returns {Promise<void>} アニメーション完了Promise
+     */
+    scaleIn(element, duration = 300) {
+        return new Promise((resolve) => {
+            if (!this.isAnimationEnabled()) {
+                element.style.transform = 'scale(1)';
+                element.style.opacity = '1';
+                resolve();
+                return;
+            }
+
+            element.style.transform = 'scale(0.9)';
+            element.style.opacity = '0';
+            element.style.transition = `transform ${duration}ms ease-out, opacity ${duration}ms ease-out`;
+            
+            requestAnimationFrame(() => {
+                element.style.transform = 'scale(1)';
+                element.style.opacity = '1';
+                
+                setTimeout(() => {
+                    element.style.transition = '';
+                    resolve();
+                }, duration);
+            });
+        });
+    }
+
+    /**
+     * ボタンにリップル効果を追加
+     * @param {HTMLElement} button - 対象ボタン
+     */
+    addRippleEffect(button) {
+        if (!this.isAnimationEnabled()) {
+            return;
+        }
+
+        button.addEventListener('click', (event) => {
+            this.triggerRipple(button, event);
+        });
+    }
+
+    /**
+     * リップル効果をトリガー
+     * @param {HTMLElement} button - 対象ボタン
+     * @param {MouseEvent} event - クリックイベント
+     */
+    triggerRipple(button, event) {
+        if (!this.isAnimationEnabled()) {
+            return;
+        }
+
+        try {
+            // 既存のリップル要素を削除
+            const existingRipple = button.querySelector('.ripple');
+            if (existingRipple) {
+                existingRipple.remove();
+            }
+
+            // リップル要素を作成
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            
+            // 要素の位置とサイズを取得
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            // リップルのスタイルを設定
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            // 要素にリップルを追加
+            button.appendChild(ripple);
+            
+            // アニメーション完了後にリップル要素を削除
+            setTimeout(() => {
+                if (ripple.parentNode) {
+                    ripple.parentNode.removeChild(ripple);
+                }
+            }, 600);
+            
+        } catch (error) {
+            console.error('リップル効果の追加中にエラーが発生:', error);
+        }
+    }
+
+    /**
+     * 要素にアニメーションクラスを適用
+     * @param {HTMLElement|string} element - 対象要素またはID
+     * @param {string} animationClass - アニメーションCSSクラス
+     * @param {number} duration - アニメーション時間（ミリ秒）
+     * @returns {Promise<void>} アニメーション完了Promise
+     */
+    animateElement(element, animationClass, duration = 300) {
+        return new Promise((resolve) => {
+            try {
+                const el = typeof element === 'string' ? document.getElementById(element) : element;
+                if (!el) {
+                    resolve();
+                    return;
+                }
+
+                if (!this.isAnimationEnabled()) {
+                    resolve();
+                    return;
+                }
+
+                el.classList.add(animationClass);
+                
+                setTimeout(() => {
+                    el.classList.remove(animationClass);
+                    resolve();
+                }, duration);
+            } catch (error) {
+                console.error('要素アニメーション中にエラーが発生:', error);
+                resolve();
+            }
+        });
+    }
+}
+
+// AnimationControllerのグローバルインスタンス
+let animationController = null;
+
+/**
+ * AnimationControllerを初期化
+ */
+function initializeAnimationController() {
+    if (!animationController) {
+        animationController = new AnimationController();
+        console.log('AnimationControllerが初期化されました');
+    }
+    return animationController;
+}
+
+/**
+ * AnimationControllerインスタンスを取得
+ * @returns {AnimationController} AnimationControllerインスタンス
+ */
+function getAnimationController() {
+    if (!animationController) {
+        return initializeAnimationController();
+    }
+    return animationController;
+}
+
+/**
+ * 既存のボタンにリップル効果を追加
+ */
+function enhanceButtonsWithRippleEffect() {
+    const controller = getAnimationController();
+    
+    // すべてのボタンにリップル効果を追加
+    const buttons = document.querySelectorAll('.btn, button:not(.modal-close):not(.theme-toggle)');
+    buttons.forEach(button => {
+        // 既にリップル効果が追加されていない場合のみ追加
+        if (!button.hasAttribute('data-ripple-enhanced')) {
+            controller.addRippleEffect(button);
+            button.setAttribute('data-ripple-enhanced', 'true');
+        }
+    });
+}
+
+/**
+ * アニメーション設定切り替えUI要素を作成
+ */
+function createAnimationToggleUI() {
+    const controller = getAnimationController();
+    
+    // アニメーション設定切り替えボタンを作成
+    const toggleButton = document.createElement('button');
+    toggleButton.className = 'btn btn-secondary animation-toggle';
+    toggleButton.innerHTML = `
+        <span class="nav-icon">${controller.isAnimationEnabled() ? '🎬' : '⏸️'}</span>
+        <span class="nav-text">${controller.isAnimationEnabled() ? 'アニメーション有効' : 'アニメーション無効'}</span>
+    `;
+    toggleButton.title = 'アニメーション設定を切り替え';
+    toggleButton.setAttribute('aria-label', 'アニメーション設定を切り替え');
+    
+    // クリックイベントを追加
+    toggleButton.addEventListener('click', () => {
+        const newState = !controller.isAnimationEnabled();
+        controller.setAnimationEnabled(newState);
+        
+        // ボタンの表示を更新
+        const icon = toggleButton.querySelector('.nav-icon');
+        const text = toggleButton.querySelector('.nav-text');
+        
+        if (icon) icon.textContent = newState ? '🎬' : '⏸️';
+        if (text) text.textContent = newState ? 'アニメーション有効' : 'アニメーション無効';
+        
+        // 成功メッセージを表示
+        showMessage(
+            `アニメーションを${newState ? '有効' : '無効'}にしました`,
+            'success'
+        );
+    });
+    
+    return toggleButton;
+}
+
+/**
+ * モバイルナビゲーションにアニメーション設定を追加
+ */
+function addAnimationToggleToMobileNav() {
+    const mobileNavContent = document.querySelector('.mobile-nav-content');
+    if (mobileNavContent) {
+        const toggleButton = createAnimationToggleUI();
+        toggleButton.className = 'mobile-nav-item animation-toggle-mobile';
+        
+        // テーマ切り替えボタンの後に挿入
+        const themeToggle = mobileNavContent.querySelector('.theme-toggle-mobile');
+        if (themeToggle) {
+            themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
+        } else {
+            mobileNavContent.appendChild(toggleButton);
+        }
+    }
+}
+
+/**
+ * デスクトップナビゲーションにアニメーション設定を追加
+ */
+function addAnimationToggleToDesktopNav() {
+    const desktopNav = document.querySelector('.desktop-nav');
+    if (desktopNav) {
+        const toggleButton = createAnimationToggleUI();
+        toggleButton.className = 'btn btn-secondary animation-toggle';
+        
+        // テーマ切り替えボタンの後に挿入
+        const themeToggle = desktopNav.querySelector('.theme-toggle');
+        if (themeToggle) {
+            themeToggle.parentNode.insertBefore(toggleButton, themeToggle.nextSibling);
+        } else {
+            desktopNav.appendChild(toggleButton);
+        }
+    }
+}
+
+/**
+ * 動的に追加されるボタンを監視してリップル効果を追加
+ */
+function observeButtonAdditions() {
+    const controller = getAnimationController();
+    
+    // MutationObserverを作成
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 追加されたノードがボタンの場合
+                    if (node.matches && (node.matches('.btn') || node.matches('button:not(.modal-close):not(.theme-toggle)'))) {
+                        if (!node.hasAttribute('data-ripple-enhanced')) {
+                            controller.addRippleEffect(node);
+                            node.setAttribute('data-ripple-enhanced', 'true');
+                        }
+                    }
+                    
+                    // 追加されたノード内のボタンを検索
+                    const buttons = node.querySelectorAll && node.querySelectorAll('.btn, button:not(.modal-close):not(.theme-toggle)');
+                    if (buttons) {
+                        buttons.forEach(button => {
+                            if (!button.hasAttribute('data-ripple-enhanced')) {
+                                controller.addRippleEffect(button);
+                                button.setAttribute('data-ripple-enhanced', 'true');
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    });
+    
+    // DOM全体を監視
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    return observer;
+}
+
+// ========================================
+// AccessibilityManager クラス
+// ========================================
+
+/**
+ * アクセシビリティ機能を管理するクラス
+ */
+class AccessibilityManager {
+    constructor() {
+        this.focusTrapStack = [];
+        this.lastFocusedElement = null;
+        this.announceElement = null;
+        this.init();
+    }
+
+    /**
+     * 初期化処理
+     */
+    init() {
+        // スクリーンリーダー用のアナウンス要素を作成
+        this.createAnnounceElement();
+        
+        // キーボードナビゲーションの初期化
+        this.initializeKeyboardNavigation();
+        
+        // フォーカス表示の強化
+        this.enhanceFocusVisibility();
+    }
+
+    /**
+     * スクリーンリーダー用のアナウンス要素を作成
+     */
+    createAnnounceElement() {
+        if (!this.announceElement) {
+            this.announceElement = document.createElement('div');
+            this.announceElement.setAttribute('aria-live', 'polite');
+            this.announceElement.setAttribute('aria-atomic', 'true');
+            this.announceElement.className = 'sr-only';
+            this.announceElement.id = 'accessibility-announcer';
+            document.body.appendChild(this.announceElement);
+        }
+    }
+
+    /**
+     * フォーカス表示を設定
+     * @param {HTMLElement} element - 対象要素
+     */
+    setFocusVisible(element) {
+        if (!element) return;
+        
+        element.classList.add('focus-visible');
+        element.setAttribute('tabindex', '0');
+        
+        // フォーカスイベントリスナーを追加
+        element.addEventListener('focus', () => {
+            element.classList.add('focus-visible');
+        });
+        
+        element.addEventListener('blur', () => {
+            element.classList.remove('focus-visible');
+        });
+    }
+
+    /**
+     * フォーカス順序を管理
+     * @param {HTMLElement} container - コンテナ要素
+     */
+    manageFocusOrder(container) {
+        if (!container) return;
+        
+        const focusableElements = this.getFocusableElements(container);
+        
+        focusableElements.forEach((element, index) => {
+            element.setAttribute('tabindex', index === 0 ? '0' : '-1');
+            
+            // 矢印キーナビゲーションを追加
+            element.addEventListener('keydown', (e) => {
+                this.handleArrowKeyNavigation(e, focusableElements, index);
+            });
+        });
+    }
+
+    /**
+     * フォーカス可能な要素を取得
+     * @param {HTMLElement} container - コンテナ要素
+     * @returns {HTMLElement[]} フォーカス可能な要素の配列
+     */
+    getFocusableElements(container) {
+        const selector = [
+            'button:not([disabled])',
+            '[href]',
+            'input:not([disabled])',
+            'select:not([disabled])',
+            'textarea:not([disabled])',
+            '[tabindex]:not([tabindex="-1"])',
+            '[contenteditable="true"]'
+        ].join(', ');
+        
+        return Array.from(container.querySelectorAll(selector))
+            .filter(element => {
+                return element.offsetWidth > 0 && 
+                       element.offsetHeight > 0 && 
+                       !element.hidden;
+            });
+    }
+
+    /**
+     * 矢印キーナビゲーションを処理
+     * @param {KeyboardEvent} event - キーボードイベント
+     * @param {HTMLElement[]} elements - フォーカス可能な要素の配列
+     * @param {number} currentIndex - 現在のインデックス
+     */
+    handleArrowKeyNavigation(event, elements, currentIndex) {
+        let newIndex = currentIndex;
+        
+        switch (event.key) {
+            case 'ArrowDown':
+            case 'ArrowRight':
+                event.preventDefault();
+                newIndex = (currentIndex + 1) % elements.length;
+                break;
+            case 'ArrowUp':
+            case 'ArrowLeft':
+                event.preventDefault();
+                newIndex = currentIndex === 0 ? elements.length - 1 : currentIndex - 1;
+                break;
+            case 'Home':
+                event.preventDefault();
+                newIndex = 0;
+                break;
+            case 'End':
+                event.preventDefault();
+                newIndex = elements.length - 1;
+                break;
+            default:
+                return;
+        }
+        
+        // tabindexを更新
+        elements.forEach((el, index) => {
+            el.setAttribute('tabindex', index === newIndex ? '0' : '-1');
+        });
+        
+        // 新しい要素にフォーカス
+        elements[newIndex].focus();
+    }
+
+    /**
+     * フォーカストラップを設定
+     * @param {HTMLElement} container - トラップするコンテナ
+     */
+    trapFocus(container) {
+        if (!container) return;
+        
+        const focusableElements = this.getFocusableElements(container);
+        if (focusableElements.length === 0) return;
+        
+        // 現在のフォーカス要素を記録
+        this.lastFocusedElement = document.activeElement;
+        
+        // フォーカストラップをスタックに追加
+        this.focusTrapStack.push({
+            container,
+            focusableElements,
+            firstElement: focusableElements[0],
+            lastElement: focusableElements[focusableElements.length - 1]
+        });
+        
+        // 最初の要素にフォーカス
+        focusableElements[0].focus();
+        
+        // キーボードイベントリスナーを追加
+        const handleKeyDown = (e) => {
+            if (e.key === 'Tab') {
+                this.handleTabInTrap(e, focusableElements);
+            } else if (e.key === 'Escape') {
+                this.releaseFocusTrap();
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeyDown);
+        
+        // クリーンアップ関数を保存
+        const currentTrap = this.focusTrapStack[this.focusTrapStack.length - 1];
+        currentTrap.cleanup = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }
+
+    /**
+     * フォーカストラップ内でのTabキーを処理
+     * @param {KeyboardEvent} event - キーボードイベント
+     * @param {HTMLElement[]} focusableElements - フォーカス可能な要素
+     */
+    handleTabInTrap(event, focusableElements) {
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        if (event.shiftKey) {
+            // Shift + Tab
+            if (document.activeElement === firstElement) {
+                event.preventDefault();
+                lastElement.focus();
+            }
+        } else {
+            // Tab
+            if (document.activeElement === lastElement) {
+                event.preventDefault();
+                firstElement.focus();
+            }
+        }
+    }
+
+    /**
+     * フォーカストラップを解除
+     */
+    releaseFocusTrap() {
+        if (this.focusTrapStack.length === 0) return;
+        
+        const trap = this.focusTrapStack.pop();
+        
+        // クリーンアップ
+        if (trap.cleanup) {
+            trap.cleanup();
+        }
+        
+        // 元の要素にフォーカスを戻す
+        if (this.lastFocusedElement && this.lastFocusedElement.focus) {
+            this.lastFocusedElement.focus();
+        }
+        
+        this.lastFocusedElement = null;
+    }
+
+    /**
+     * ARIA ラベルを設定
+     * @param {HTMLElement} element - 対象要素
+     * @param {string} label - ラベルテキスト
+     */
+    setAriaLabel(element, label) {
+        if (!element || !label) return;
+        
+        element.setAttribute('aria-label', label);
+    }
+
+    /**
+     * ARIA ロールを設定
+     * @param {HTMLElement} element - 対象要素
+     * @param {string} role - ロール名
+     */
+    setAriaRole(element, role) {
+        if (!element || !role) return;
+        
+        element.setAttribute('role', role);
+    }
+
+    /**
+     * スクリーンリーダーにメッセージをアナウンス
+     * @param {string} message - アナウンスするメッセージ
+     * @param {'polite'|'assertive'} priority - 優先度
+     */
+    announceToScreenReader(message, priority = 'polite') {
+        if (!message || !this.announceElement) return;
+        
+        // aria-liveを設定
+        this.announceElement.setAttribute('aria-live', priority);
+        
+        // メッセージを設定
+        this.announceElement.textContent = message;
+        
+        // 少し遅延してからクリア（スクリーンリーダーが読み上げるため）
+        setTimeout(() => {
+            if (this.announceElement) {
+                this.announceElement.textContent = '';
+            }
+        }, 1000);
+    }
+
+    /**
+     * キーボードナビゲーションを有効化
+     * @param {HTMLElement} container - コンテナ要素
+     */
+    enableKeyboardNavigation(container) {
+        if (!container) return;
+        
+        // フォーカス順序を管理
+        this.manageFocusOrder(container);
+        
+        // キーボードショートカットを追加
+        container.addEventListener('keydown', (e) => {
+            this.handleKeyboardShortcuts(e);
+        });
+    }
+
+    /**
+     * キーボードショートカットを処理
+     * @param {KeyboardEvent} event - キーボードイベント
+     */
+    handleKeyboardShortcuts(event) {
+        // Enter または Space でボタンをアクティベート
+        if ((event.key === 'Enter' || event.key === ' ') && 
+            event.target.matches('button, [role="button"]')) {
+            event.preventDefault();
+            event.target.click();
+        }
+        
+        // Escapeでモーダルを閉じる
+        if (event.key === 'Escape') {
+            const openModal = document.querySelector('.modal[style*="display: flex"]');
+            if (openModal) {
+                const modalId = openModal.id;
+                if (modalId && typeof hideModal === 'function') {
+                    hideModal(modalId);
+                }
+            }
+        }
+    }
+
+    /**
+     * フォーカス表示を強化
+     */
+    enhanceFocusVisibility() {
+        // すべてのインタラクティブ要素にフォーカス表示を追加
+        const interactiveElements = document.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [role="button"]'
+        );
+        
+        interactiveElements.forEach(element => {
+            this.setFocusVisible(element);
+        });
+    }
+
+    /**
+     * カラーコントラスト比を検証
+     * @param {string} foreground - 前景色（例: '#000000'）
+     * @param {string} background - 背景色（例: '#ffffff'）
+     * @returns {boolean} WCAG AA基準を満たすかどうか
+     */
+    validateColorContrast(foreground, background) {
+        try {
+            // 簡易的なコントラスト比計算
+            const getLuminance = (color) => {
+                const rgb = parseInt(color.slice(1), 16);
+                const r = (rgb >> 16) & 0xff;
+                const g = (rgb >> 8) & 0xff;
+                const b = (rgb >> 0) & 0xff;
+                
+                const [rs, gs, bs] = [r, g, b].map(c => {
+                    c = c / 255;
+                    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+                });
+                
+                return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+            };
+            
+            const l1 = getLuminance(foreground);
+            const l2 = getLuminance(background);
+            const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+            
+            // WCAG AA基準: 4.5:1以上
+            return ratio >= 4.5;
+        } catch (error) {
+            console.error('カラーコントラスト検証中にエラーが発生:', error);
+            return false;
+        }
+    }
+
+    /**
+     * ハイコントラストモードに調整
+     */
+    adjustForHighContrast() {
+        // システムのハイコントラスト設定を検出
+        if (window.matchMedia && window.matchMedia('(prefers-contrast: high)').matches) {
+            document.body.classList.add('high-contrast');
+            this.announceToScreenReader('ハイコントラストモードが有効になりました');
+        }
+    }
+
+    /**
+     * キーボードナビゲーションの初期化
+     */
+    initializeKeyboardNavigation() {
+        // 全体的なキーボードナビゲーションを設定
+        this.enableKeyboardNavigation(document.body);
+        
+        // ハイコントラスト設定を適用
+        this.adjustForHighContrast();
+        
+        // メディアクエリの変更を監視
+        if (window.matchMedia) {
+            const contrastQuery = window.matchMedia('(prefers-contrast: high)');
+            contrastQuery.addEventListener('change', () => {
+                this.adjustForHighContrast();
+            });
+        }
+    }
+}
+
+// AccessibilityManagerのグローバルインスタンス
+let accessibilityManager = null;
+
+/**
+ * AccessibilityManagerを初期化
+ */
+function initializeAccessibilityManager() {
+    if (!accessibilityManager) {
+        accessibilityManager = new AccessibilityManager();
+        console.log('AccessibilityManagerが初期化されました');
+    }
+    return accessibilityManager;
+}
+
+/**
+ * AccessibilityManagerインスタンスを取得
+ * @returns {AccessibilityManager} AccessibilityManagerインスタンス
+ */
+function getAccessibilityManager() {
+    if (!accessibilityManager) {
+        return initializeAccessibilityManager();
+    }
+    return accessibilityManager;
+}
+
+// ========================================
+// ResponsiveLayoutManager クラス
+// ========================================
+
+/**
+ * レスポンシブデザインとレイアウト管理を行うクラス
+ */
+class ResponsiveLayoutManager {
+    constructor() {
+        this.mobileNavOpen = false;
+        this.currentBreakpoint = this.getCurrentBreakpoint();
+        this.mobileMenuToggle = null;
+        this.mobileNav = null;
+        this.mobileNavOverlay = null;
+        
+        this.init();
+    }
+
+    /**
+     * 初期化
+     */
+    init() {
+        this.setupElements();
+        this.setupEventListeners();
+        this.setupResizeObserver();
+        this.updateLayoutForCurrentBreakpoint();
+    }
+
+    /**
+     * DOM要素の取得
+     */
+    setupElements() {
+        this.mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        this.mobileNav = document.getElementById('mobile-nav');
+        this.mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+    }
+
+    /**
+     * イベントリスナーの設定
+     */
+    setupEventListeners() {
+        // ハンバーガーメニューボタンのクリック
+        if (this.mobileMenuToggle) {
+            this.mobileMenuToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleMobileNav();
+            });
+        }
+
+        // オーバーレイのクリック
+        if (this.mobileNavOverlay) {
+            this.mobileNavOverlay.addEventListener('click', () => {
+                this.hideMobileNav();
+            });
+        }
+
+        // ESCキーでモバイルナビを閉じる
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.mobileNavOpen) {
+                this.hideMobileNav();
+            }
+        });
+
+        // モバイルナビ内のボタンイベント
+        this.setupMobileNavButtons();
+    }
+
+    /**
+     * モバイルナビ内のボタンイベントを設定
+     */
+    setupMobileNavButtons() {
+        // モバイル版テーマ切り替えボタン
+        const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+        if (mobileThemeToggle) {
+            mobileThemeToggle.addEventListener('click', () => {
+                // デスクトップ版のテーマ切り替えボタンをクリック
+                const desktopThemeToggle = document.getElementById('theme-toggle');
+                if (desktopThemeToggle) {
+                    desktopThemeToggle.click();
+                }
+                this.hideMobileNav();
+            });
+        }
+
+        // モバイル版プロジェクト追加ボタン
+        const mobileAddProjectBtn = document.getElementById('mobile-add-project-btn');
+        if (mobileAddProjectBtn) {
+            mobileAddProjectBtn.addEventListener('click', () => {
+                // デスクトップ版のプロジェクト追加ボタンをクリック
+                const desktopAddProjectBtn = document.getElementById('add-project-btn');
+                if (desktopAddProjectBtn) {
+                    desktopAddProjectBtn.click();
+                }
+                this.hideMobileNav();
+            });
+        }
+
+        // モバイル版データエクスポートボタン
+        const mobileExportDataBtn = document.getElementById('mobile-export-data-btn');
+        if (mobileExportDataBtn) {
+            mobileExportDataBtn.addEventListener('click', () => {
+                // デスクトップ版のデータエクスポートボタンをクリック
+                const desktopExportDataBtn = document.getElementById('export-data-btn');
+                if (desktopExportDataBtn) {
+                    desktopExportDataBtn.click();
+                }
+                this.hideMobileNav();
+            });
+        }
+    }
+
+    /**
+     * リサイズオブザーバーの設定
+     */
+    setupResizeObserver() {
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(() => {
+                const newBreakpoint = this.getCurrentBreakpoint();
+                if (newBreakpoint !== this.currentBreakpoint) {
+                    this.currentBreakpoint = newBreakpoint;
+                    this.updateLayoutForCurrentBreakpoint();
+                }
+            });
+            resizeObserver.observe(document.body);
+        } else {
+            // ResizeObserverが利用できない場合はwindow.resizeイベントを使用
+            window.addEventListener('resize', () => {
+                const newBreakpoint = this.getCurrentBreakpoint();
+                if (newBreakpoint !== this.currentBreakpoint) {
+                    this.currentBreakpoint = newBreakpoint;
+                    this.updateLayoutForCurrentBreakpoint();
+                }
+            });
+        }
+    }
+
+    /**
+     * 現在のブレークポイントを取得
+     * @returns {string} ブレークポイント名
+     */
+    getCurrentBreakpoint() {
+        const width = window.innerWidth;
+        if (width <= 480) return 'xs';
+        if (width <= 768) return 'sm';
+        if (width <= 1024) return 'md';
+        if (width <= 1280) return 'lg';
+        return 'xl';
+    }
+
+    /**
+     * モバイル表示かどうかを判定
+     * @returns {boolean} モバイル表示かどうか
+     */
+    isMobile() {
+        return this.currentBreakpoint === 'xs' || this.currentBreakpoint === 'sm';
+    }
+
+    /**
+     * タブレット表示かどうかを判定
+     * @returns {boolean} タブレット表示かどうか
+     */
+    isTablet() {
+        return this.currentBreakpoint === 'md';
+    }
+
+    /**
+     * デスクトップ表示かどうかを判定
+     * @returns {boolean} デスクトップ表示かどうか
+     */
+    isDesktop() {
+        return this.currentBreakpoint === 'lg' || this.currentBreakpoint === 'xl';
+    }
+
+    /**
+     * ブレークポイントに応じてレイアウトを調整
+     */
+    updateLayoutForCurrentBreakpoint() {
+        // モバイル表示でない場合はモバイルナビを閉じる
+        if (!this.isMobile() && this.mobileNavOpen) {
+            this.hideMobileNav();
+        }
+
+        // レイアウト調整のイベントを発火
+        document.dispatchEvent(new CustomEvent('breakpointChange', {
+            detail: {
+                breakpoint: this.currentBreakpoint,
+                isMobile: this.isMobile(),
+                isTablet: this.isTablet(),
+                isDesktop: this.isDesktop()
+            }
+        }));
+    }
+
+    /**
+     * モバイルナビゲーションを表示
+     */
+    showMobileNav() {
+        if (!this.mobileNav || !this.mobileNavOverlay || !this.mobileMenuToggle) {
+            return;
+        }
+
+        this.mobileNavOpen = true;
+        
+        // クラスを追加
+        this.mobileNav.classList.add('open');
+        this.mobileNavOverlay.classList.add('show');
+        this.mobileMenuToggle.classList.add('active');
+        
+        // ARIA属性を更新
+        this.mobileNav.setAttribute('aria-hidden', 'false');
+        this.mobileNavOverlay.setAttribute('aria-hidden', 'false');
+        this.mobileMenuToggle.setAttribute('aria-expanded', 'true');
+        this.mobileMenuToggle.setAttribute('aria-label', 'メニューを閉じる');
+        
+        // ボディのスクロールを無効化
+        document.body.style.overflow = 'hidden';
+        
+        // フォーカスをモバイルナビ内の最初の要素に移動
+        const firstFocusableElement = this.mobileNav.querySelector('button, a, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusableElement) {
+            setTimeout(() => {
+                firstFocusableElement.focus();
+            }, 100);
+        }
+    }
+
+    /**
+     * モバイルナビゲーションを非表示
+     */
+    hideMobileNav() {
+        if (!this.mobileNav || !this.mobileNavOverlay || !this.mobileMenuToggle) {
+            return;
+        }
+
+        this.mobileNavOpen = false;
+        
+        // クラスを削除
+        this.mobileNav.classList.remove('open');
+        this.mobileNavOverlay.classList.remove('show');
+        this.mobileMenuToggle.classList.remove('active');
+        
+        // ARIA属性を更新
+        this.mobileNav.setAttribute('aria-hidden', 'true');
+        this.mobileNavOverlay.setAttribute('aria-hidden', 'true');
+        this.mobileMenuToggle.setAttribute('aria-expanded', 'false');
+        this.mobileMenuToggle.setAttribute('aria-label', 'メニューを開く');
+        
+        // ボディのスクロールを有効化
+        document.body.style.overflow = '';
+        
+        // フォーカスをハンバーガーメニューボタンに戻す
+        this.mobileMenuToggle.focus();
+    }
+
+    /**
+     * モバイルナビゲーションの表示/非表示を切り替え
+     */
+    toggleMobileNav() {
+        if (this.mobileNavOpen) {
+            this.hideMobileNav();
+        } else {
+            this.showMobileNav();
+        }
+    }
+
+    /**
+     * カードレイアウトに切り替え
+     */
+    switchToCardLayout() {
+        const projectGrid = document.getElementById('project-grid');
+        const projectTableContainer = document.getElementById('project-table-container');
+        
+        if (projectGrid && projectTableContainer) {
+            projectGrid.style.display = 'grid';
+            projectTableContainer.style.display = 'none';
+        }
+    }
+
+    /**
+     * テーブルレイアウトに切り替え
+     */
+    switchToTableLayout() {
+        const projectGrid = document.getElementById('project-grid');
+        const projectTableContainer = document.getElementById('project-table-container');
+        
+        if (projectGrid && projectTableContainer) {
+            projectGrid.style.display = 'none';
+            projectTableContainer.style.display = 'block';
+        }
+    }
+
+    /**
+     * ブレークポイントに応じてレイアウトを調整
+     * @param {string} breakpoint - ブレークポイント名
+     */
+    adjustLayoutForBreakpoint(breakpoint) {
+        // モバイル・タブレットではカードレイアウト、デスクトップではテーブルレイアウト
+        if (breakpoint === 'xs' || breakpoint === 'sm') {
+            this.switchToCardLayout();
+        } else {
+            // デスクトップでは両方のレイアウトを利用可能にする
+            // デフォルトはカードレイアウト
+            this.switchToCardLayout();
+        }
+    }
+}
+
+// ========================================
+// ResponsiveLayoutManager の初期化
+// ========================================
+
+// グローバル変数として ResponsiveLayoutManager インスタンスを作成
+let responsiveLayoutManager;
+
+// DOM読み込み完了後に初期化
+document.addEventListener('DOMContentLoaded', () => {
+    responsiveLayoutManager = new ResponsiveLayoutManager();
+    console.log('ResponsiveLayoutManager が初期化されました');
+});
+
+// ========================================
+// モバイルナビゲーション用のグローバル関数
+// ========================================
+
+/**
+ * モバイルナビゲーションを表示
+ */
+function showMobileNav() {
+    if (responsiveLayoutManager) {
+        responsiveLayoutManager.showMobileNav();
+    }
+}
+
+/**
+ * モバイルナビゲーションを非表示
+ */
+function hideMobileNav() {
+    if (responsiveLayoutManager) {
+        responsiveLayoutManager.hideMobileNav();
+    }
+}
+
+/**
+ * モバイルナビゲーションの表示/非表示を切り替え
+ */
+function toggleMobileNav() {
+    if (responsiveLayoutManager) {
+        responsiveLayoutManager.toggleMobileNav();
+    }
+}
+
+/**
+ * 現在のブレークポイントを取得
+ * @returns {string} ブレークポイント名
+ */
+function getCurrentBreakpoint() {
+    if (responsiveLayoutManager) {
+        return responsiveLayoutManager.getCurrentBreakpoint();
+    }
+    return 'xl'; // デフォルト値
+}
+
+/**
+ * モバイル表示かどうかを判定
+ * @returns {boolean} モバイル表示かどうか
+ */
+function isMobile() {
+    if (responsiveLayoutManager) {
+        return responsiveLayoutManager.isMobile();
+    }
+    return window.innerWidth <= 768; // フォールバック
+}
+
+console.log('モバイルナビゲーション機能が読み込まれました');
+
+// ========================================
+// テーマ管理クラス
+// ========================================
+
+/**
+ * テーマの切り替えとダークモード対応を管理するクラス
+ */
+class ThemeManager {
+    constructor() {
+        this.currentTheme = 'auto';
+        this.storageKey = 'spec-tracking-site:theme';
+        this.initialize();
+    }
+
+    /**
+     * テーママネージャーを初期化
+     */
+    initialize() {
+        this.loadThemePreference();
+        this.detectSystemTheme();
+        this.applyTheme(this.resolveTheme());
+        this.setupEventListeners();
+        this.setupSystemThemeListener();
+    }
+
+    /**
+     * 現在のテーマを取得
+     * @returns {'light'|'dark'|'auto'} 現在のテーマ
+     */
+    getCurrentTheme() {
+        return this.currentTheme;
+    }
+
+    /**
+     * テーマを設定
+     * @param {'light'|'dark'|'auto'} theme - 設定するテーマ
+     */
+    setTheme(theme) {
+        if (!['light', 'dark', 'auto'].includes(theme)) {
+            console.warn('無効なテーマが指定されました:', theme);
+            return;
+        }
+
+        this.currentTheme = theme;
+        this.saveThemePreference(theme);
+        this.applyTheme(this.resolveTheme());
+        this.updateThemeToggleButtons();
+    }
+
+    /**
+     * テーマを切り替え
+     */
+    toggleTheme() {
+        const themes = ['light', 'dark', 'auto'];
+        const currentIndex = themes.indexOf(this.currentTheme);
+        const nextIndex = (currentIndex + 1) % themes.length;
+        this.setTheme(themes[nextIndex]);
+    }
+
+    /**
+     * システムテーマを検出
+     * @returns {'light'|'dark'} システムテーマ
+     */
+    detectSystemTheme() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+        return 'light';
+    }
+
+    /**
+     * 実際に適用するテーマを解決
+     * @returns {'light'|'dark'} 解決されたテーマ
+     */
+    resolveTheme() {
+        if (this.currentTheme === 'auto') {
+            return this.detectSystemTheme();
+        }
+        return this.currentTheme;
+    }
+
+    /**
+     * テーマ設定をlocalStorageに保存
+     * @param {string} theme - 保存するテーマ
+     */
+    saveThemePreference(theme) {
+        try {
+            localStorage.setItem(this.storageKey, theme);
+        } catch (error) {
+            console.warn('テーマ設定の保存に失敗しました:', error);
+        }
+    }
+
+    /**
+     * テーマ設定をlocalStorageから読み込み
+     * @returns {string|null} 保存されたテーマ設定
+     */
+    loadThemePreference() {
+        try {
+            const savedTheme = localStorage.getItem(this.storageKey);
+            if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
+                this.currentTheme = savedTheme;
+                return savedTheme;
+            }
+        } catch (error) {
+            console.warn('テーマ設定の読み込みに失敗しました:', error);
+        }
+        return null;
+    }
+
+    /**
+     * DOMにテーマを適用
+     * @param {'light'|'dark'} theme - 適用するテーマ
+     */
+    applyTheme(theme) {
+        const root = document.documentElement;
+        
+        // 既存のテーマクラスを削除
+        root.removeAttribute('data-theme');
+        
+        // 新しいテーマを適用
+        if (theme === 'dark') {
+            root.setAttribute('data-theme', 'dark');
+        }
+        
+        // テーマ切り替えアニメーション
+        this.addThemeTransition();
+        
+        console.log('テーマが適用されました:', theme);
+    }
+
+    /**
+     * テーマ切り替えアニメーションを追加
+     */
+    addThemeTransition() {
+        const root = document.documentElement;
+        root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+        
+        // アニメーション完了後にtransitionを削除
+        setTimeout(() => {
+            root.style.transition = '';
+        }, 300);
+    }
+
+    /**
+     * テーマ切り替えボタンを更新
+     */
+    updateThemeToggleButtons() {
+        const desktopToggle = document.getElementById('theme-toggle');
+        const mobileToggle = document.getElementById('mobile-theme-toggle');
+        
+        const resolvedTheme = this.resolveTheme();
+        const icon = this.getThemeIcon();
+        const label = this.getThemeLabel();
+        
+        if (desktopToggle) {
+            desktopToggle.innerHTML = icon;
+            desktopToggle.setAttribute('title', label);
+            desktopToggle.setAttribute('aria-label', label);
+        }
+        
+        if (mobileToggle) {
+            const iconSpan = mobileToggle.querySelector('.nav-icon');
+            const textSpan = mobileToggle.querySelector('.nav-text');
+            
+            if (iconSpan) iconSpan.textContent = icon;
+            if (textSpan) textSpan.textContent = label;
+            
+            mobileToggle.setAttribute('aria-label', label);
+        }
+    }
+
+    /**
+     * 現在のテーマに応じたアイコンを取得
+     * @returns {string} テーマアイコン
+     */
+    getThemeIcon() {
+        switch (this.currentTheme) {
+            case 'light':
+                return '☀️';
+            case 'dark':
+                return '🌙';
+            case 'auto':
+                return '🔄';
+            default:
+                return '🌙';
+        }
+    }
+
+    /**
+     * 現在のテーマに応じたラベルを取得
+     * @returns {string} テーマラベル
+     */
+    getThemeLabel() {
+        switch (this.currentTheme) {
+            case 'light':
+                return 'ライトモード (ダークモードに切り替え)';
+            case 'dark':
+                return 'ダークモード (自動に切り替え)';
+            case 'auto':
+                return '自動テーマ (ライトモードに切り替え)';
+            default:
+                return 'テーマ切り替え';
+        }
+    }
+
+    /**
+     * イベントリスナーを設定
+     */
+    setupEventListeners() {
+        // デスクトップ版テーマ切り替えボタン
+        const desktopToggle = document.getElementById('theme-toggle');
+        if (desktopToggle) {
+            desktopToggle.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
+
+        // モバイル版テーマ切り替えボタン
+        const mobileToggle = document.getElementById('mobile-theme-toggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
+    }
+
+    /**
+     * システムテーマ変更の監視を設定
+     */
+    setupSystemThemeListener() {
+        if (window.matchMedia) {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            
+            // 初期設定
+            this.handleSystemThemeChange(mediaQuery);
+            
+            // 変更監視
+            if (mediaQuery.addEventListener) {
+                mediaQuery.addEventListener('change', (e) => {
+                    this.handleSystemThemeChange(e);
+                });
+            } else {
+                // 古いブラウザ対応
+                mediaQuery.addListener((e) => {
+                    this.handleSystemThemeChange(e);
+                });
+            }
+        }
+    }
+
+    /**
+     * システムテーマ変更を処理
+     * @param {MediaQueryList} mediaQuery - メディアクエリオブジェクト
+     */
+    handleSystemThemeChange(mediaQuery) {
+        if (this.currentTheme === 'auto') {
+            const systemTheme = mediaQuery.matches ? 'dark' : 'light';
+            this.applyTheme(systemTheme);
+            console.log('システムテーマが変更されました:', systemTheme);
+        }
+    }
+}
+
+// ========================================
+// ThemeManager の初期化
+// ========================================
+
+// グローバル変数として ThemeManager インスタンスを作成
+let themeManager;
+
+// DOM読み込み完了後に初期化
+document.addEventListener('DOMContentLoaded', () => {
+    themeManager = new ThemeManager();
+    console.log('ThemeManager が初期化されました');
+    
+    // AnimationControllerを初期化
+    animationController = initializeAnimationController();
+    
+    // AccessibilityManagerを初期化
+    accessibilityManager = initializeAccessibilityManager();
+    
+    // 既存のボタンにリップル効果を追加
+    enhanceButtonsWithRippleEffect();
+    
+    // アニメーション設定UIを追加
+    addAnimationToggleToDesktopNav();
+    addAnimationToggleToMobileNav();
+    
+    // 動的に追加されるボタンを監視
+    observeButtonAdditions();
+});
+
+// ========================================
+// テーマ管理用のグローバル関数
+// ========================================
+
+/**
+ * 現在のテーマを取得
+ * @returns {'light'|'dark'|'auto'} 現在のテーマ
+ */
+function getCurrentTheme() {
+    if (themeManager) {
+        return themeManager.getCurrentTheme();
+    }
+    return 'auto'; // デフォルト値
+}
+
+/**
+ * テーマを設定
+ * @param {'light'|'dark'|'auto'} theme - 設定するテーマ
+ */
+function setTheme(theme) {
+    if (themeManager) {
+        themeManager.setTheme(theme);
+    }
+}
+
+/**
+ * テーマを切り替え
+ */
+function toggleTheme() {
+    if (themeManager) {
+        themeManager.toggleTheme();
+    }
+}
+
+/**
+ * システムテーマを検出
+ * @returns {'light'|'dark'} システムテーマ
+ */
+function detectSystemTheme() {
+    if (themeManager) {
+        return themeManager.detectSystemTheme();
+    }
+    // フォールバック
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    return 'light';
+}
+// ========================================
+// 12.2 大量データ表示の最適化 - 遅延読み込み機能
+// ========================================
+
+/**
+ * 遅延読み込みマネージャークラス
+ * 大量データの段階的読み込みとキャッシュ管理を行う
+ */
+class LazyLoadManager {
+    constructor() {
+        this.cache = new Map();
+        this.loadingPromises = new Map();
+        this.batchSize = 50; // 一度に読み込むデータ数
+        this.maxCacheSize = 1000; // キャッシュの最大サイズ
+    }
+
+    /**
+     * データを遅延読み込みする
+     * @param {string} key - キャッシュキー
+     * @param {Function} loadFunction - データ読み込み関数
+     * @param {number} offset - オフセット
+     * @param {number} limit - 読み込み件数
+     * @returns {Promise<any[]>} 読み込まれたデータ
+     */
+    async loadData(key, loadFunction, offset = 0, limit = this.batchSize) {
+        const cacheKey = `${key}_${offset}_${limit}`;
+        
+        // キャッシュから取得を試行
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+
+        // 既に読み込み中の場合は同じPromiseを返す
+        if (this.loadingPromises.has(cacheKey)) {
+            return this.loadingPromises.get(cacheKey);
+        }
+
+        // 新しい読み込みを開始
+        const loadPromise = this._performLoad(loadFunction, offset, limit);
+        this.loadingPromises.set(cacheKey, loadPromise);
+
+        try {
+            const data = await loadPromise;
+            
+            // キャッシュサイズ管理
+            this._manageCacheSize();
+            
+            // キャッシュに保存
+            this.cache.set(cacheKey, data);
+            
+            return data;
+        } finally {
+            this.loadingPromises.delete(cacheKey);
+        }
+    }
+
+    /**
+     * 実際のデータ読み込みを実行
+     * @private
+     */
+    async _performLoad(loadFunction, offset, limit) {
+        return new Promise((resolve) => {
+            // 非同期でデータを読み込み（UIをブロックしない）
+            setTimeout(() => {
+                try {
+                    const data = loadFunction(offset, limit);
+                    resolve(data);
+                } catch (error) {
+                    console.error('データ読み込みエラー:', error);
+                    resolve([]);
+                }
+            }, 0);
+        });
+    }
+
+    /**
+     * キャッシュサイズを管理（LRU方式）
+     * @private
+     */
+    _manageCacheSize() {
+        if (this.cache.size >= this.maxCacheSize) {
+            // 最も古いエントリを削除
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+        }
+    }
+
+    /**
+     * キャッシュをクリア
+     */
+    clearCache() {
+        this.cache.clear();
+        this.loadingPromises.clear();
+    }
+
+    /**
+     * プリロード（事前読み込み）
+     * @param {string} key - キャッシュキー
+     * @param {Function} loadFunction - データ読み込み関数
+     * @param {number} totalCount - 総データ数
+     */
+    async preload(key, loadFunction, totalCount) {
+        const batches = Math.ceil(totalCount / this.batchSize);
+        const preloadPromises = [];
+
+        // 最初の3バッチを事前読み込み
+        for (let i = 0; i < Math.min(3, batches); i++) {
+            const offset = i * this.batchSize;
+            preloadPromises.push(
+                this.loadData(key, loadFunction, offset, this.batchSize)
+            );
+        }
+
+        await Promise.all(preloadPromises);
+    }
+}
+
+/**
+ * 改良された仮想スクロールクラス
+ * 遅延読み込みと組み合わせた高性能な大量データ表示
+ */
+class EnhancedVirtualScroll {
+    constructor(container, options = {}) {
+        this.container = container;
+        this.options = {
+            rowHeight: options.rowHeight || 60,
+            visibleRows: options.visibleRows || 20,
+            bufferRows: options.bufferRows || 5,
+            batchSize: options.batchSize || 50,
+            ...options
+        };
+        
+        this.lazyLoader = new LazyLoadManager();
+        this.data = [];
+        this.totalCount = 0;
+        this.renderedRows = new Map();
+        this.isScrolling = false;
+        this.scrollTimeout = null;
+        
+        this.init();
+    }
+
+    /**
+     * 初期化
+     */
+    init() {
+        this.createScrollContainer();
+        this.bindEvents();
+    }
+
+    /**
+     * スクロールコンテナを作成
+     */
+    createScrollContainer() {
+        this.container.innerHTML = `
+            <div class="enhanced-virtual-scroll" style="height: ${this.options.visibleRows * this.options.rowHeight}px; overflow-y: auto; position: relative;">
+                <div class="scroll-spacer" style="position: relative;">
+                    <div class="visible-content" style="position: absolute; top: 0; width: 100%;"></div>
+                </div>
+                <div class="loading-indicator" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="spinner"></div>
+                    <span>読み込み中...</span>
+                </div>
+            </div>
+        `;
+
+        this.scrollContainer = this.container.querySelector('.enhanced-virtual-scroll');
+        this.spacer = this.container.querySelector('.scroll-spacer');
+        this.visibleContent = this.container.querySelector('.visible-content');
+        this.loadingIndicator = this.container.querySelector('.loading-indicator');
+    }
+
+    /**
+     * イベントをバインド
+     */
+    bindEvents() {
+        this.scrollContainer.addEventListener('scroll', this.handleScroll.bind(this));
+        
+        // Intersection Observer for preloading
+        this.intersectionObserver = new IntersectionObserver(
+            this.handleIntersection.bind(this),
+            { threshold: 0.1 }
+        );
+    }
+
+    /**
+     * スクロールイベントハンドラ
+     */
+    handleScroll() {
+        if (!this.isScrolling) {
+            this.isScrolling = true;
+            this.showLoadingIndicator();
+        }
+
+        // スクロール終了の検出
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+            this.isScrolling = false;
+            this.hideLoadingIndicator();
+        }, 150);
+
+        this.updateVisibleRows();
+        this.preloadNearbyData();
+    }
+
+    /**
+     * 表示行を更新
+     */
+    async updateVisibleRows() {
+        const scrollTop = this.scrollContainer.scrollTop;
+        const startIndex = Math.floor(scrollTop / this.options.rowHeight);
+        const endIndex = Math.min(
+            startIndex + this.options.visibleRows + this.options.bufferRows * 2,
+            this.totalCount
+        );
+
+        // 必要なデータを遅延読み込み
+        await this.ensureDataLoaded(startIndex, endIndex);
+
+        // 表示内容を更新
+        this.renderVisibleRows(startIndex, endIndex);
+    }
+
+    /**
+     * データが読み込まれていることを確認
+     */
+    async ensureDataLoaded(startIndex, endIndex) {
+        const batchStart = Math.floor(startIndex / this.options.batchSize) * this.options.batchSize;
+        const batchEnd = Math.ceil(endIndex / this.options.batchSize) * this.options.batchSize;
+
+        const loadPromises = [];
+        for (let offset = batchStart; offset < batchEnd; offset += this.options.batchSize) {
+            if (!this.isDataLoaded(offset)) {
+                loadPromises.push(
+                    this.lazyLoader.loadData(
+                        'virtualScroll',
+                        this.options.loadFunction,
+                        offset,
+                        this.options.batchSize
+                    )
+                );
+            }
+        }
+
+        if (loadPromises.length > 0) {
+            await Promise.all(loadPromises);
+        }
+    }
+
+    /**
+     * データが読み込まれているかチェック
+     */
+    isDataLoaded(offset) {
+        const cacheKey = `virtualScroll_${offset}_${this.options.batchSize}`;
+        return this.lazyLoader.cache.has(cacheKey);
+    }
+
+    /**
+     * 表示行をレンダリング
+     */
+    renderVisibleRows(startIndex, endIndex) {
+        const fragment = document.createDocumentFragment();
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            if (i >= this.totalCount) break;
+            
+            const rowElement = this.createRowElement(i);
+            if (rowElement) {
+                rowElement.style.position = 'absolute';
+                rowElement.style.top = `${i * this.options.rowHeight}px`;
+                rowElement.style.width = '100%';
+                rowElement.style.height = `${this.options.rowHeight}px`;
+                fragment.appendChild(rowElement);
+            }
+        }
+
+        // 既存の内容をクリアして新しい内容を追加
+        this.visibleContent.innerHTML = '';
+        this.visibleContent.appendChild(fragment);
+    }
+
+    /**
+     * 行要素を作成
+     */
+    createRowElement(index) {
+        if (this.options.createRowElement) {
+            return this.options.createRowElement(index, this.getDataAtIndex(index));
+        }
+        
+        // デフォルトの行要素
+        const row = document.createElement('div');
+        row.className = 'virtual-row';
+        row.textContent = `Row ${index}`;
+        return row;
+    }
+
+    /**
+     * 指定インデックスのデータを取得
+     */
+    getDataAtIndex(index) {
+        const batchIndex = Math.floor(index / this.options.batchSize);
+        const batchOffset = batchIndex * this.options.batchSize;
+        const cacheKey = `virtualScroll_${batchOffset}_${this.options.batchSize}`;
+        
+        const batchData = this.lazyLoader.cache.get(cacheKey);
+        if (batchData) {
+            const localIndex = index - batchOffset;
+            return batchData[localIndex];
+        }
+        
+        return null;
+    }
+
+    /**
+     * 近くのデータを事前読み込み
+     */
+    async preloadNearbyData() {
+        const scrollTop = this.scrollContainer.scrollTop;
+        const currentIndex = Math.floor(scrollTop / this.options.rowHeight);
+        
+        // 前後のバッチを事前読み込み
+        const preloadPromises = [];
+        for (let i = -1; i <= 1; i++) {
+            const batchIndex = Math.floor((currentIndex + i * this.options.batchSize) / this.options.batchSize);
+            const offset = batchIndex * this.options.batchSize;
+            
+            if (offset >= 0 && offset < this.totalCount && !this.isDataLoaded(offset)) {
+                preloadPromises.push(
+                    this.lazyLoader.loadData(
+                        'virtualScroll',
+                        this.options.loadFunction,
+                        offset,
+                        this.options.batchSize
+                    )
+                );
+            }
+        }
+
+        if (preloadPromises.length > 0) {
+            await Promise.all(preloadPromises);
+        }
+    }
+
+    /**
+     * Intersection Observer ハンドラ
+     */
+    handleIntersection(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // 表示領域に入った要素の近くのデータを事前読み込み
+                this.preloadNearbyData();
+            }
+        });
+    }
+
+    /**
+     * データを設定
+     */
+    setData(totalCount, loadFunction) {
+        this.totalCount = totalCount;
+        this.options.loadFunction = loadFunction;
+        
+        // スペーサーの高さを設定
+        this.spacer.style.height = `${totalCount * this.options.rowHeight}px`;
+        
+        // 初期データを読み込み
+        this.updateVisibleRows();
+        
+        // 事前読み込みを開始
+        this.lazyLoader.preload('virtualScroll', loadFunction, totalCount);
+    }
+
+    /**
+     * ローディングインジケーターを表示
+     */
+    showLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.display = 'block';
+        }
+    }
+
+    /**
+     * ローディングインジケーターを非表示
+     */
+    hideLoadingIndicator() {
+        if (this.loadingIndicator) {
+            this.loadingIndicator.style.display = 'none';
+        }
+    }
+
+    /**
+     * 破棄
+     */
+    destroy() {
+        if (this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
+        }
+        
+        if (this.scrollTimeout) {
+            clearTimeout(this.scrollTimeout);
+        }
+        
+        this.lazyLoader.clearCache();
+    }
+}
+
+// グローバルインスタンス
+window.lazyLoadManager = new LazyLoadManager();
+window.EnhancedVirtualScroll = EnhancedVirtualScroll;
+
+/**
+ * 既存の仮想スクロール機能を強化
+ */
+function enhanceExistingVirtualScroll() {
+    // 既存の仮想スクロール関数を拡張
+    const originalGenerateVirtualScrollTable = window.generateVirtualScrollTable;
+    
+    if (originalGenerateVirtualScrollTable) {
+        window.generateVirtualScrollTable = function(sortedFindings) {
+            // 大量データの場合は新しい拡張仮想スクロールを使用
+            if (sortedFindings.length > 500) {
+                return generateEnhancedVirtualScrollTable(sortedFindings);
+            }
+            
+            // 通常の仮想スクロールを使用
+            return originalGenerateVirtualScrollTable(sortedFindings);
+        };
+    }
+}
+
+/**
+ * 拡張仮想スクロールテーブルを生成
+ */
+function generateEnhancedVirtualScrollTable(sortedFindings) {
+    const container = document.createElement('div');
+    container.className = 'enhanced-virtual-scroll-container';
+    
+    // データ読み込み関数
+    const loadFunction = (offset, limit) => {
+        return sortedFindings.slice(offset, offset + limit);
+    };
+    
+    // 行作成関数
+    const createRowElement = (index, finding) => {
+        if (!finding) return null;
+        
+        const row = document.createElement('div');
+        row.className = 'virtual-table-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.borderBottom = '1px solid var(--neutral-200)';
+        row.style.padding = '0.5rem';
+        
+        // 簡略化された行内容（パフォーマンス重視）
+        row.innerHTML = `
+            <div style="flex: 0 0 120px; font-size: 0.8rem;">${finding.timestamp.split('T')[0]}</div>
+            <div style="flex: 0 0 100px; font-size: 0.8rem;">${finding.process}</div>
+            <div style="flex: 0 0 120px; font-size: 0.8rem;">${finding.docType}</div>
+            <div style="flex: 0 0 120px; font-size: 0.8rem;">${finding.category}</div>
+            <div style="flex: 0 0 80px;">
+                <span class="severity-${finding.severity}">${finding.severity}</span>
+            </div>
+            <div style="flex: 0 0 80px;">
+                <span class="status-${finding.status.toLowerCase()}">${finding.status}</span>
+            </div>
+            <div style="flex: 1; min-width: 200px; font-size: 0.85rem;">${finding.description}</div>
+            <div style="flex: 0 0 100px;">
+                <button class="btn btn-small btn-primary" onclick="editReviewFinding('${finding.id}')">編集</button>
+            </div>
+        `;
+        
+        return row;
+    };
+    
+    // 拡張仮想スクロールを初期化
+    const virtualScroll = new EnhancedVirtualScroll(container, {
+        rowHeight: 60,
+        visibleRows: 15,
+        bufferRows: 5,
+        batchSize: 100,
+        createRowElement: createRowElement
+    });
+    
+    virtualScroll.setData(sortedFindings.length, loadFunction);
+    
+    // 情報表示を追加
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'virtual-scroll-info';
+    infoDiv.innerHTML = `
+        <small class="text-secondary">
+            ${sortedFindings.length}件のデータ（拡張仮想スクロール - 遅延読み込み対応）
+        </small>
+    `;
+    
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(container);
+    wrapper.appendChild(infoDiv);
+    
+    return wrapper.outerHTML;
+}
+
+// 初期化時に既存機能を強化
+document.addEventListener('DOMContentLoaded', function() {
+    enhanceExistingVirtualScroll();
+});

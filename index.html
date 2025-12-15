@@ -8,14 +8,68 @@
 </head>
 <body>
     <header>
-        <h1>仕様駆動開発管理サイト</h1>
-        <nav>
-            <button id="add-project-btn" class="btn btn-primary">プロジェクト追加</button>
-            <button id="export-data-btn" class="btn btn-secondary">データエクスポート</button>
+        <div class="header-content">
+            <h1>仕様駆動開発管理サイト</h1>
+            
+            <!-- モバイルハンバーガーメニューボタン -->
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="メニューを開く" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <!-- デスクトップナビゲーション -->
+            <nav class="desktop-nav">
+                <button id="theme-toggle" class="theme-toggle" aria-label="テーマ切り替え" title="ダークモード切り替え">
+                    🌙
+                </button>
+                <button id="add-project-btn" class="btn btn-primary">
+                    <span class="nav-icon">+</span>
+                    プロジェクト追加
+                </button>
+                <button id="export-data-btn" class="btn btn-secondary">
+                    <span class="nav-icon">📥</span>
+                    データエクスポート
+                </button>
+            </nav>
+        </div>
+        
+        <!-- モバイルナビゲーションメニュー -->
+        <nav id="mobile-nav" class="mobile-nav" aria-hidden="true">
+            <div class="mobile-nav-content">
+                <button id="mobile-theme-toggle" class="mobile-nav-item theme-toggle-mobile" aria-label="テーマ切り替え">
+                    <span class="nav-icon">🌙</span>
+                    <span class="nav-text">ダークモード切り替え</span>
+                </button>
+                <button id="mobile-add-project-btn" class="mobile-nav-item btn-mobile btn-primary-mobile">
+                    <span class="nav-icon">+</span>
+                    <span class="nav-text">プロジェクト追加</span>
+                </button>
+                <button id="mobile-export-data-btn" class="mobile-nav-item btn-mobile btn-secondary-mobile">
+                    <span class="nav-icon">📥</span>
+                    <span class="nav-text">データエクスポート</span>
+                </button>
+            </div>
         </nav>
+        
+        <!-- モバイルナビゲーション背景オーバーレイ -->
+        <div id="mobile-nav-overlay" class="mobile-nav-overlay" aria-hidden="true"></div>
     </header>
 
     <main>
+        <!-- ブレッドクラムナビゲーション -->
+        <nav class="breadcrumb" aria-label="ブレッドクラム">
+            <div class="breadcrumb-item">
+                <span class="breadcrumb-icon">🏠</span>
+                <span class="breadcrumb-current">ホーム</span>
+            </div>
+            <span class="breadcrumb-separator">›</span>
+            <div class="breadcrumb-item">
+                <span class="breadcrumb-icon">📋</span>
+                <span class="breadcrumb-current">プロジェクト一覧</span>
+            </div>
+        </nav>
+
         <section id="project-list-section">
             <h2>プロジェクト一覧</h2>
             
@@ -24,8 +78,13 @@
                 <p>プロジェクトがありません。新しいプロジェクトを追加してください。</p>
             </div>
 
-            <!-- プロジェクト一覧テーブル -->
-            <div id="project-table-container">
+            <!-- プロジェクト一覧カードグリッド -->
+            <div id="project-grid" class="project-grid">
+                <!-- プロジェクトカードがここに動的に挿入される -->
+            </div>
+
+            <!-- フォールバック用テーブル表示 -->
+            <div id="project-table-container" class="table-container" style="display: none;">
                 <table id="project-table" class="data-table">
                     <thead>
                         <tr>
@@ -47,34 +106,44 @@
     </main>
 
     <!-- プロジェクト追加モーダル -->
-    <div id="add-project-modal" class="modal" style="display: none;">
+    <div id="add-project-modal" class="modal" aria-hidden="true">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>新規プロジェクト追加</h3>
                 <button class="modal-close" aria-label="閉じる">&times;</button>
             </div>
-            <form id="add-project-form">
-                <div class="form-group">
-                    <label for="project-name">プロジェクト名 <span class="required">*</span></label>
-                    <input type="text" id="project-name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="project-framework">フレームワーク種別 <span class="required">*</span></label>
-                    <input type="text" id="project-framework" name="framework" required>
-                </div>
-                <div class="form-group">
-                    <label for="project-date">日付 <span class="required">*</span></label>
-                    <input type="date" id="project-date" name="date" required>
-                </div>
-                <div class="form-group">
-                    <label for="project-assignee">担当者</label>
-                    <input type="text" id="project-assignee" name="assignee">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancel-add-project">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">追加</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="add-project-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="project-name">プロジェクト名 <span class="required">*</span></label>
+                            <input type="text" id="project-name" name="name" required aria-describedby="project-name-error">
+                            <div id="project-name-error" class="error-message" style="display: none;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="project-framework">フレームワーク種別 <span class="required">*</span></label>
+                            <input type="text" id="project-framework" name="framework" required aria-describedby="project-framework-error">
+                            <div id="project-framework-error" class="error-message" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="project-date">日付 <span class="required">*</span></label>
+                            <input type="date" id="project-date" name="date" required aria-describedby="project-date-error">
+                            <div id="project-date-error" class="error-message" style="display: none;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="project-assignee">担当者</label>
+                            <input type="text" id="project-assignee" name="assignee" aria-describedby="project-assignee-error">
+                            <div id="project-assignee-error" class="error-message" style="display: none;"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-add-project">キャンセル</button>
+                <button type="submit" class="btn btn-primary" form="add-project-form">追加</button>
+            </div>
         </div>
     </div>
 
