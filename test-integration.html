@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TokenEncryption統合テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #console-output {
+            background-color: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-pending { background-color: #ffc107; }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TokenEncryption統合テスト</h1>
+        
+        <div class="test-section info">
+            <h3>テスト概要</h3>
+            <p>このページでは、TokenEncryptionクラスの実装が正しく動作することを確認します。</p>
+            <ul>
+                <li>暗号化機能のサポート確認</li>
+                <li>基本的な暗号化・復号化テスト</li>
+                <li>ブラウザフィンガープリント生成テスト</li>
+                <li>暗号化データ検証テスト</li>
+                <li>GitHubSettingsManagerとの統合テスト</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <button id="run-test-btn" onclick="runIntegrationTest()">統合テスト実行</button>
+            <button id="clear-console-btn" onclick="clearConsole()">コンソールクリア</button>
+            <button id="run-manual-test-btn" onclick="runManualTest()">手動テスト実行</button>
+        </div>
+
+        <div class="test-section">
+            <h3>テスト結果</h3>
+            <div id="test-status">
+                <span class="status-indicator status-pending"></span>
+                テスト待機中...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>コンソール出力</h3>
+            <div id="console-output"></div>
+        </div>
+    </div>
+
+    <!-- 必要なスクリプトを読み込み -->
+    <!-- Octokit.js CDN -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="test-integration.js"></script>
+    
+    <script>
+        // コンソール出力をページに表示
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function appendToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '[ERROR]' : '[LOG]';
+            const color = type === 'error' ? '#ff6b6b' : '#00ff00';
+            
+            consoleOutput.innerHTML += `<span style="color: ${color}">[${timestamp}] ${prefix} ${message}</span>\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            appendToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            appendToConsole(args.join(' '), 'error');
+        };
+
+        // テスト実行関数
+        async function runIntegrationTest() {
+            const runButton = document.getElementById('run-test-btn');
+            const statusDiv = document.getElementById('test-status');
+            
+            runButton.disabled = true;
+            runButton.textContent = 'テスト実行中...';
+            
+            statusDiv.innerHTML = '<span class="status-indicator status-pending"></span>テスト実行中...';
+            
+            try {
+                console.log('統合テストを開始します...');
+                const success = await testTokenEncryptionIntegration();
+                
+                if (success) {
+                    statusDiv.innerHTML = '<span class="status-indicator status-success"></span>すべてのテストが成功しました！';
+                    statusDiv.className = 'success';
+                } else {
+                    statusDiv.innerHTML = '<span class="status-indicator status-error"></span>一部のテストが失敗しました';
+                    statusDiv.className = 'error';
+                }
+            } catch (error) {
+                console.error('テスト実行中にエラーが発生しました:', error);
+                statusDiv.innerHTML = '<span class="status-indicator status-error"></span>テスト実行中にエラーが発生しました';
+                statusDiv.className = 'error';
+            } finally {
+                runButton.disabled = false;
+                runButton.textContent = '統合テスト実行';
+            }
+        }
+
+        // コンソールクリア
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+
+        // 手動テスト実行
+        async function runManualTest() {
+            console.log('=== 手動テスト開始 ===');
+            
+            try {
+                // RateLimitManagerのテスト
+                console.log('--- RateLimitManagerテスト ---');
+                const rateLimitManager = RateLimitManager.getInstance();
+                
+                // 基本機能テスト
+                console.log('認証状態設定テスト...');
+                rateLimitManager.setAuthenticationStatus(true);
+                console.log('✓ 認証状態設定完了');
+                
+                // 使用状況取得テスト
+                console.log('使用状況取得テスト...');
+                const usageStatus = await rateLimitManager.getUsageStatus();
+                console.log('使用状況:', usageStatus);
+                console.log('✓ 使用状況取得完了');
+                
+                // 最適間隔計算テスト
+                console.log('最適間隔計算テスト...');
+                const optimalInterval = rateLimitManager.calculateOptimalSyncInterval(3);
+                console.log('3プロジェクトの最適間隔:', optimalInterval, '分');
+                console.log('✓ 最適間隔計算完了');
+                
+                // レポート生成テスト
+                console.log('レポート生成テスト...');
+                const report = rateLimitManager.generateUsageReport();
+                console.log('使用状況レポート:', report);
+                console.log('✓ レポート生成完了');
+                
+                // AutoSyncSchedulerのテスト
+                console.log('--- AutoSyncSchedulerテスト ---');
+                const scheduler = AutoSyncScheduler.getInstance();
+                
+                console.log('スケジューラー状態取得テスト...');
+                const status = scheduler.getStatus();
+                console.log('スケジューラー状態:', status);
+                console.log('✓ スケジューラー状態取得完了');
+                
+                // 簡単な暗号化テスト
+                console.log('--- TokenEncryptionテスト ---');
+                const testToken = 'manual_test_token_' + Date.now();
+                console.log('テストトークン:', testToken);
+                
+                const encrypted = await TokenEncryption.encrypt(testToken);
+                console.log('暗号化結果:', encrypted);
+                
+                const decrypted = await TokenEncryption.decrypt(encrypted);
+                console.log('復号化結果:', decrypted);
+                
+                console.log('結果:', testToken === decrypted ? '✓ 成功' : '✗ 失敗');
+                
+                console.log('=== 手動テスト完了 ===');
+                
+            } catch (error) {
+                console.error('手動テストエラー:', error);
+            }
+        }
+
+        // ページ読み込み完了時の処理
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('TokenEncryption統合テストページが読み込まれました');
+            console.log('「統合テスト実行」ボタンをクリックしてテストを開始してください');
+        });
+    </script>
+</body>
+</html>

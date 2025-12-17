@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エラー回復機能テスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--neutral-300);
+            border-radius: 8px;
+        }
+        
+        .test-button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: var(--primary-500);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .test-button:hover {
+            background-color: var(--primary-600);
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .success {
+            background-color: var(--success-50);
+            border: 1px solid var(--success-300);
+            color: var(--success-800);
+        }
+        
+        .error {
+            background-color: var(--error-50);
+            border: 1px solid var(--error-300);
+            color: var(--error-800);
+        }
+        
+        .info {
+            background-color: var(--primary-50);
+            border: 1px solid var(--primary-300);
+            color: var(--primary-800);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>エラー回復機能テスト</h1>
+        
+        <div class="test-section">
+            <h2>ネットワーク状態監視</h2>
+            <p>現在のネットワーク状態: <span class="network-status-indicator" id="current-status">確認中...</span></p>
+            <button class="test-button" onclick="testNetworkStatus()">ネットワーク状態確認</button>
+            <button class="test-button" onclick="testNetworkConnection()">接続テスト</button>
+            <button class="test-button" onclick="simulateOffline()">オフライン状態をシミュレート</button>
+            <button class="test-button" onclick="simulateOnline()">オンライン状態をシミュレート</button>
+            <div id="network-result" class="test-result info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>指数バックオフ再試行</h2>
+            <button class="test-button" onclick="testRetrySuccess()">成功ケース</button>
+            <button class="test-button" onclick="testRetryFailure()">失敗ケース</button>
+            <button class="test-button" onclick="testRetryableError()">再試行可能エラー</button>
+            <button class="test-button" onclick="testNonRetryableError()">再試行不可エラー</button>
+            <div id="retry-result" class="test-result info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>エラー判定テスト</h2>
+            <button class="test-button" onclick="testErrorClassification()">エラー分類テスト</button>
+            <div id="error-classification-result" class="test-result info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>部分的同期失敗処理</h2>
+            <button class="test-button" onclick="testPartialSyncFailure()">部分的失敗処理</button>
+            <div id="partial-sync-result" class="test-result info"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>レート制限エラー処理</h2>
+            <button class="test-button" onclick="testRateLimitHandling()">レート制限処理</button>
+            <div id="rate-limit-result" class="test-result info"></div>
+        </div>
+    </div>
+
+    <!-- 必要なスクリプト -->
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // テスト用の関数
+        
+        function updateResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `test-result ${type}`;
+        }
+        
+        // ネットワーク状態テスト
+        function testNetworkStatus() {
+            const isOnline = ErrorRecoveryManager.isOnline();
+            updateResult('network-result', `ネットワーク状態: ${isOnline ? 'オンライン' : 'オフライン'}`, 'info');
+            
+            // 状態インジケーターを更新
+            ErrorRecoveryManager.updateNetworkStatusUI(isOnline);
+        }
+        
+        async function testNetworkConnection() {
+            updateResult('network-result', '接続テスト中...', 'info');
+            try {
+                const isConnected = await ErrorRecoveryManager.testNetworkConnection();
+                updateResult('network-result', `接続テスト結果: ${isConnected ? '成功' : '失敗'}`, isConnected ? 'success' : 'error');
+            } catch (error) {
+                updateResult('network-result', `接続テストエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        function simulateOffline() {
+            // オフラインイベントをシミュレート
+            ErrorRecoveryManager.handleNetworkLoss();
+            updateResult('network-result', 'オフライン状態をシミュレートしました', 'info');
+        }
+        
+        function simulateOnline() {
+            // オンラインイベントをシミュレート
+            ErrorRecoveryManager.handleNetworkRestore();
+            updateResult('network-result', 'オンライン状態をシミュレートしました', 'success');
+        }
+        
+        // 再試行テスト
+        async function testRetrySuccess() {
+            updateResult('retry-result', '成功ケースをテスト中...', 'info');
+            
+            let attempts = 0;
+            const testFunction = async () => {
+                attempts++;
+                if (attempts < 3) {
+                    throw new Error('一時的なエラー');
+                }
+                return '成功';
+            };
+            
+            try {
+                const result = await ErrorRecoveryManager.retryWithBackoff(testFunction, {
+                    maxRetries: 5,
+                    baseDelay: 100
+                });
+                updateResult('retry-result', `成功: ${result} (試行回数: ${attempts})`, 'success');
+            } catch (error) {
+                updateResult('retry-result', `失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRetryFailure() {
+            updateResult('retry-result', '失敗ケースをテスト中...', 'info');
+            
+            let attempts = 0;
+            const testFunction = async () => {
+                attempts++;
+                throw new Error('常に失敗するエラー');
+            };
+            
+            try {
+                await ErrorRecoveryManager.retryWithBackoff(testFunction, {
+                    maxRetries: 3,
+                    baseDelay: 100
+                });
+                updateResult('retry-result', '予期しない成功', 'error');
+            } catch (error) {
+                updateResult('retry-result', `期待通りの失敗: ${error.message} (試行回数: ${attempts})`, 'success');
+            }
+        }
+        
+        async function testRetryableError() {
+            updateResult('retry-result', '再試行可能エラーをテスト中...', 'info');
+            
+            let attempts = 0;
+            const testFunction = async () => {
+                attempts++;
+                const error = new Error('fetch error');
+                error.name = 'TypeError';
+                throw error;
+            };
+            
+            try {
+                await ErrorRecoveryManager.retryWithBackoff(testFunction, {
+                    maxRetries: 2,
+                    baseDelay: 100
+                });
+                updateResult('retry-result', '予期しない成功', 'error');
+            } catch (error) {
+                updateResult('retry-result', `再試行可能エラーで期待通りの失敗: ${error.message} (試行回数: ${attempts})`, 'success');
+            }
+        }
+        
+        async function testNonRetryableError() {
+            updateResult('retry-result', '再試行不可エラーをテスト中...', 'info');
+            
+            let attempts = 0;
+            const testFunction = async () => {
+                attempts++;
+                const error = new Error('Not Found');
+                error.name = 'GitHubAPIError';
+                error.status = 404;
+                throw error;
+            };
+            
+            try {
+                await ErrorRecoveryManager.retryWithBackoff(testFunction, {
+                    maxRetries: 3,
+                    baseDelay: 100
+                });
+                updateResult('retry-result', '予期しない成功', 'error');
+            } catch (error) {
+                updateResult('retry-result', `再試行不可エラーで即座に失敗: ${error.message} (試行回数: ${attempts})`, 'success');
+            }
+        }
+        
+        // エラー分類テスト
+        function testErrorClassification() {
+            const testCases = [
+                { error: new TypeError('fetch error'), expected: true, description: 'ネットワークエラー' },
+                { error: { name: 'GitHubAPIError', status: 403, details: 'rate limit exceeded' }, expected: true, description: 'レート制限エラー' },
+                { error: { name: 'GitHubAPIError', status: 500 }, expected: true, description: 'サーバーエラー' },
+                { error: { name: 'GitHubAPIError', status: 503 }, expected: true, description: 'サービス利用不可' },
+                { error: { name: 'GitHubAPIError', status: 401 }, expected: false, description: '認証エラー' },
+                { error: { name: 'GitHubAPIError', status: 404 }, expected: false, description: 'リソース未発見' },
+                { error: { name: 'AbortError' }, expected: false, description: 'ユーザーキャンセル' },
+                { error: new Error('network timeout'), expected: true, description: 'ネットワークタイムアウト' }
+            ];
+            
+            let results = [];
+            testCases.forEach(testCase => {
+                const result = ErrorRecoveryManager.isRetryableError(testCase.error);
+                const status = result === testCase.expected ? '✓' : '✗';
+                results.push(`${status} ${testCase.description}: ${result} (期待値: ${testCase.expected})`);
+            });
+            
+            updateResult('error-classification-result', results.join('\n'), 'info');
+        }
+        
+        // 部分的同期失敗処理テスト
+        async function testPartialSyncFailure() {
+            updateResult('partial-sync-result', '部分的同期失敗処理をテスト中...', 'info');
+            
+            const projectId = 'test-project-' + Date.now();
+            const successfulResults = [
+                {
+                    timestamp: new Date().toISOString(),
+                    status: 'pass',
+                    source: 'github',
+                    githubData: {
+                        runId: 123,
+                        workflowName: 'CI',
+                        commitSha: 'abc123',
+                        branch: 'main',
+                        actor: 'testuser',
+                        htmlUrl: 'https://github.com/test/repo/actions/runs/123'
+                    }
+                }
+            ];
+            const errors = [
+                new Error('ワークフロー取得失敗'),
+                new Error('メトリクス抽出失敗')
+            ];
+            
+            try {
+                await ErrorRecoveryManager.handlePartialSyncFailure(projectId, successfulResults, errors);
+                updateResult('partial-sync-result', '部分的同期失敗処理が完了しました', 'success');
+            } catch (error) {
+                updateResult('partial-sync-result', `部分的同期失敗処理エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // レート制限エラー処理テスト
+        async function testRateLimitHandling() {
+            updateResult('rate-limit-result', 'レート制限エラー処理をテスト中...', 'info');
+            
+            const rateLimitError = {
+                name: 'GitHubAPIError',
+                status: 403,
+                details: 'API rate limit exceeded',
+                message: 'Rate limit exceeded'
+            };
+            
+            try {
+                await ErrorRecoveryManager.handleRateLimitError(rateLimitError);
+                updateResult('rate-limit-result', 'レート制限エラー処理が完了しました', 'success');
+            } catch (error) {
+                updateResult('rate-limit-result', `レート制限エラー処理エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初期ネットワーク状態を表示
+            testNetworkStatus();
+            
+            console.log('ErrorRecoveryManager テストページが読み込まれました');
+        });
+    </script>
+</body>
+</html>

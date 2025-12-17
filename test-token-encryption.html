@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Encryption Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Token Encryption テスト</h1>
+    
+    <div class="test-section info">
+        <h3>暗号化機能サポート状況</h3>
+        <div id="support-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>基本的な暗号化・復号化テスト</h3>
+        <input type="text" id="test-token" placeholder="テスト用トークンを入力" value="ghp_test123456789abcdef">
+        <button onclick="testBasicEncryption()">暗号化・復号化テスト</button>
+        <div id="basic-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>ブラウザフィンガープリント生成テスト</h3>
+        <button onclick="testFingerprint()">フィンガープリント生成</button>
+        <div id="fingerprint-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>暗号化データ検証テスト</h3>
+        <button onclick="testEncryptionValidation()">検証テスト実行</button>
+        <div id="validation-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>エラーハンドリングテスト</h3>
+        <button onclick="testErrorHandling()">エラーハンドリングテスト</button>
+        <div id="error-test-result"></div>
+    </div>
+
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script>
+        // サポート状況をチェック
+        function checkSupport() {
+            const supportDiv = document.getElementById('support-status');
+            if (TokenEncryption.isSupported()) {
+                supportDiv.innerHTML = '<span class="success">✓ 暗号化機能がサポートされています</span>';
+            } else {
+                supportDiv.innerHTML = '<span class="error">✗ 暗号化機能がサポートされていません</span>';
+            }
+        }
+
+        // 基本的な暗号化・復号化テスト
+        async function testBasicEncryption() {
+            const resultDiv = document.getElementById('basic-test-result');
+            const token = document.getElementById('test-token').value;
+            
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error">テスト用トークンを入力してください</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="info">暗号化中...</div>';
+                
+                // 暗号化
+                const encrypted = await TokenEncryption.encrypt(token);
+                console.log('Encrypted:', encrypted);
+                
+                // 復号化
+                const decrypted = await TokenEncryption.decrypt(encrypted);
+                console.log('Decrypted:', decrypted);
+                
+                // 結果確認
+                if (token === decrypted) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✓ 暗号化・復号化テスト成功</h4>
+                            <p><strong>元のトークン:</strong> ${token}</p>
+                            <p><strong>暗号化データ:</strong> ${encrypted.substring(0, 50)}...</p>
+                            <p><strong>復号化結果:</strong> ${decrypted}</p>
+                            <p><strong>一致:</strong> ${token === decrypted ? 'はい' : 'いいえ'}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>✗ 暗号化・復号化テスト失敗</h4>
+                            <p>復号化されたデータが元のデータと一致しません</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ エラーが発生しました</h4>
+                        <p>${TokenEncryption.handleEncryptionError(error)}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // フィンガープリント生成テスト
+        async function testFingerprint() {
+            const resultDiv = document.getElementById('fingerprint-result');
+            
+            try {
+                resultDiv.innerHTML = '<div class="info">フィンガープリント生成中...</div>';
+                
+                const fingerprint1 = await TokenEncryption.generateBrowserFingerprint();
+                const fingerprint2 = await TokenEncryption.generateBrowserFingerprint();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✓ フィンガープリント生成成功</h4>
+                        <p><strong>フィンガープリント1:</strong> ${fingerprint1}</p>
+                        <p><strong>フィンガープリント2:</strong> ${fingerprint2}</p>
+                        <p><strong>一致:</strong> ${fingerprint1 === fingerprint2 ? 'はい（正常）' : 'いいえ（異常）'}</p>
+                        <p><strong>長さ:</strong> ${fingerprint1.length} 文字</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ フィンガープリント生成エラー</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // 暗号化データ検証テスト
+        async function testEncryptionValidation() {
+            const resultDiv = document.getElementById('validation-result');
+            
+            try {
+                const testToken = 'test_token_123';
+                const encrypted = await TokenEncryption.encrypt(testToken);
+                
+                const tests = [
+                    {
+                        name: '有効な暗号化データ',
+                        data: encrypted,
+                        expected: true
+                    },
+                    {
+                        name: '無効なBase64データ',
+                        data: 'invalid_base64_!@#',
+                        expected: false
+                    },
+                    {
+                        name: '短すぎるデータ',
+                        data: btoa('short'),
+                        expected: false
+                    },
+                    {
+                        name: '平文トークン',
+                        data: 'ghp_plaintext_token',
+                        expected: false
+                    }
+                ];
+                
+                let results = '<h4>検証テスト結果:</h4>';
+                let allPassed = true;
+                
+                for (const test of tests) {
+                    const result = TokenEncryption.isEncrypted(test.data);
+                    const passed = result === test.expected;
+                    allPassed = allPassed && passed;
+                    
+                    results += `
+                        <p>
+                            <strong>${test.name}:</strong> 
+                            ${passed ? '✓' : '✗'} 
+                            (期待値: ${test.expected}, 実際: ${result})
+                        </p>
+                    `;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="${allPassed ? 'success' : 'error'}">
+                        ${results}
+                        <p><strong>総合結果:</strong> ${allPassed ? '全テスト合格' : 'テスト失敗あり'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ 検証テストエラー</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // エラーハンドリングテスト
+        async function testErrorHandling() {
+            const resultDiv = document.getElementById('error-test-result');
+            
+            try {
+                // 無効なデータで復号化を試行
+                const invalidData = 'invalid_encrypted_data';
+                
+                try {
+                    await TokenEncryption.decrypt(invalidData);
+                    resultDiv.innerHTML = '<div class="error">エラーが発生するはずでしたが、成功してしまいました</div>';
+                } catch (error) {
+                    const errorMessage = TokenEncryption.handleEncryptionError(error);
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✓ エラーハンドリングテスト成功</h4>
+                            <p><strong>エラータイプ:</strong> ${error.name}</p>
+                            <p><strong>ユーザーフレンドリーメッセージ:</strong> ${errorMessage}</p>
+                            <p><strong>元のエラー:</strong> ${error.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ エラーハンドリングテスト失敗</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // ページ読み込み時にサポート状況をチェック
+        document.addEventListener('DOMContentLoaded', checkSupport);
+    </script>
+</body>
+</html>

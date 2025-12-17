@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レート制限ハンドリングテスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .test-button {
+            margin: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button.primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .test-button.warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        .test-button.danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .test-output {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.ok {
+            background-color: #27ae60;
+        }
+        .status-indicator.warning {
+            background-color: #f39c12;
+        }
+        .status-indicator.error {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>レート制限ハンドリングテスト</h1>
+        
+        <div class="test-section">
+            <h2>レート制限状態シミュレーション</h2>
+            <p>レート制限ハンドリング機能をテストします。</p>
+            
+            <button class="test-button primary" onclick="testRateLimitCallback()">
+                プライマリレート制限をシミュレート
+            </button>
+            <button class="test-button warning" onclick="testSecondaryRateLimitCallback()">
+                セカンダリレート制限をシミュレート
+            </button>
+            <button class="test-button primary" onclick="testRateLimitReset()">
+                レート制限リセットをシミュレート
+            </button>
+            
+            <div id="rate-limit-status" class="test-output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>UI更新テスト</h2>
+            <p>レート制限時のUI更新をテストします。</p>
+            
+            <!-- レート制限インジケーター -->
+            <div>
+                <span class="status-indicator ok"></span>
+                <span>API状態:</span>
+                <span class="rate-limit-indicator">API利用可能</span>
+            </div>
+            
+            <!-- レート制限情報表示 -->
+            <div id="rate-limit-info" class="rate-limit-status ok">
+                <div class="rate-limit-ok">
+                    <i class="icon-check">✓</i>
+                    <span>API利用可能</span>
+                </div>
+            </div>
+            
+            <!-- API使用状況表示 -->
+            <div id="api-usage-info" class="api-usage-display">
+                <div class="usage-bar">
+                    <div class="usage-fill low" style="width: 25%"></div>
+                </div>
+                <div class="usage-details">
+                    <span>使用済み: 1250/5000 リクエスト (25%)</span>
+                    <span>残り: 3750 リクエスト</span>
+                    <span>リセット: 14:30:00</span>
+                    <span>認証状態: 認証済み</span>
+                </div>
+            </div>
+            
+            <!-- 同期ボタン（テスト用） -->
+            <button class="test-button primary sync-button" onclick="testSyncButton()">
+                同期実行
+            </button>
+            <button class="test-button primary manual-sync-button" onclick="testManualSync()">
+                手動同期
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>自動同期スケジューラーテスト</h2>
+            <p>自動同期の一時停止・再開機能をテストします。</p>
+            
+            <button class="test-button primary" onclick="testAutoSyncPause()">
+                自動同期を一時停止
+            </button>
+            <button class="test-button primary" onclick="testAutoSyncResume()">
+                自動同期を再開
+            </button>
+            <button class="test-button warning" onclick="testAutoSyncPauseUntil()">
+                時間指定で一時停止
+            </button>
+            
+            <div id="auto-sync-status" class="test-output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>通知システムテスト</h2>
+            <p>レート制限通知をテストします。</p>
+            
+            <button class="test-button warning" onclick="testRateLimitNotification()">
+                レート制限通知
+            </button>
+            <button class="test-button warning" onclick="testSecondaryRateLimitNotification()">
+                セカンダリレート制限通知
+            </button>
+            <button class="test-button primary" onclick="testResetNotification()">
+                リセット通知
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>テストログ</h2>
+            <div id="test-log" class="test-output">テスト開始...\n</div>
+            <button class="test-button" onclick="clearTestLog()">ログクリア</button>
+        </div>
+    </div>
+
+    <!-- エラー・成功メッセージ表示エリア -->
+    <div id="message-container"></div>
+
+    <!-- 必要なスクリプト -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // テスト用のグローバル変数
+        let testRateLimitManager = null;
+        let testAutoSyncScheduler = null;
+
+        // テスト初期化
+        function initializeTests() {
+            testRateLimitManager = RateLimitManager.getInstance();
+            testAutoSyncScheduler = AutoSyncScheduler.getInstance();
+            
+            logTest('テスト環境初期化完了');
+            
+            // レート制限状態変更イベントのリスナーを設定
+            window.addEventListener('rateLimitStatusChanged', (event) => {
+                logTest(`レート制限状態変更イベント: ${JSON.stringify(event.detail, null, 2)}`);
+            });
+        }
+
+        // テストログ出力
+        function logTest(message) {
+            const logElement = document.getElementById('test-log');
+            if (logElement) {
+                const timestamp = new Date().toLocaleTimeString();
+                logElement.textContent += `[${timestamp}] ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        }
+
+        // テストログクリア
+        function clearTestLog() {
+            const logElement = document.getElementById('test-log');
+            if (logElement) {
+                logElement.textContent = 'ログクリア完了\n';
+            }
+        }
+
+        // プライマリレート制限コールバックテスト
+        function testRateLimitCallback() {
+            logTest('プライマリレート制限コールバックテスト開始');
+            
+            const mockOptions = {
+                method: 'GET',
+                url: '/repos/test/test/actions/runs'
+            };
+            
+            const result = testRateLimitManager.onRateLimit(3600, mockOptions, null, 0);
+            
+            logTest(`レート制限コールバック結果: ${result ? '再試行' : '停止'}`);
+            
+            // 状態表示を更新
+            updateRateLimitStatus();
+        }
+
+        // セカンダリレート制限コールバックテスト
+        function testSecondaryRateLimitCallback() {
+            logTest('セカンダリレート制限コールバックテスト開始');
+            
+            const mockOptions = {
+                method: 'GET',
+                url: '/repos/test/test/actions/runs'
+            };
+            
+            const result = testRateLimitManager.onSecondaryRateLimit(60, mockOptions, null, 0);
+            
+            logTest(`セカンダリレート制限コールバック結果: ${result ? '再試行' : '停止'}`);
+            
+            // 状態表示を更新
+            updateRateLimitStatus();
+        }
+
+        // レート制限リセットテスト
+        function testRateLimitReset() {
+            logTest('レート制限リセットテスト開始');
+            
+            testRateLimitManager.handleRateLimitReset();
+            
+            logTest('レート制限リセット処理完了');
+            
+            // 状態表示を更新
+            updateRateLimitStatus();
+        }
+
+        // 自動同期一時停止テスト
+        function testAutoSyncPause() {
+            logTest('自動同期一時停止テスト開始');
+            
+            testAutoSyncScheduler.pause();
+            
+            const status = testAutoSyncScheduler.getStatus();
+            logTest(`自動同期状態: ${JSON.stringify(status, null, 2)}`);
+            
+            updateAutoSyncStatus(status);
+        }
+
+        // 自動同期再開テスト
+        function testAutoSyncResume() {
+            logTest('自動同期再開テスト開始');
+            
+            testAutoSyncScheduler.resume();
+            
+            const status = testAutoSyncScheduler.getStatus();
+            logTest(`自動同期状態: ${JSON.stringify(status, null, 2)}`);
+            
+            updateAutoSyncStatus(status);
+        }
+
+        // 時間指定一時停止テスト
+        function testAutoSyncPauseUntil() {
+            logTest('時間指定一時停止テスト開始');
+            
+            const resumeTime = new Date(Date.now() + 30000); // 30秒後
+            testAutoSyncScheduler.pauseUntil(resumeTime);
+            
+            const status = testAutoSyncScheduler.getStatus();
+            logTest(`自動同期状態: ${JSON.stringify(status, null, 2)}`);
+            logTest(`再開予定時刻: ${resumeTime.toLocaleTimeString()}`);
+            
+            updateAutoSyncStatus(status);
+        }
+
+        // レート制限通知テスト
+        function testRateLimitNotification() {
+            logTest('レート制限通知テスト開始');
+            
+            testRateLimitManager.notifyRateLimit(3600);
+            
+            logTest('レート制限通知送信完了');
+        }
+
+        // セカンダリレート制限通知テスト
+        function testSecondaryRateLimitNotification() {
+            logTest('セカンダリレート制限通知テスト開始');
+            
+            testRateLimitManager.notifySecondaryRateLimit(60);
+            
+            logTest('セカンダリレート制限通知送信完了');
+        }
+
+        // リセット通知テスト
+        function testResetNotification() {
+            logTest('リセット通知テスト開始');
+            
+            testRateLimitManager.showNotification('レート制限が解除されました。', 'success');
+            
+            logTest('リセット通知送信完了');
+        }
+
+        // 同期ボタンテスト
+        function testSyncButton() {
+            logTest('同期ボタンテスト実行');
+        }
+
+        // 手動同期テスト
+        function testManualSync() {
+            logTest('手動同期テスト実行');
+        }
+
+        // レート制限状態表示を更新
+        function updateRateLimitStatus() {
+            const statusElement = document.getElementById('rate-limit-status');
+            if (statusElement) {
+                const report = testRateLimitManager.generateUsageReport();
+                statusElement.textContent = JSON.stringify(report, null, 2);
+            }
+        }
+
+        // 自動同期状態表示を更新
+        function updateAutoSyncStatus(status) {
+            const statusElement = document.getElementById('auto-sync-status');
+            if (statusElement) {
+                statusElement.textContent = JSON.stringify(status, null, 2);
+            }
+        }
+
+        // ページ読み込み時にテストを初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeTests, 1000); // GitHub統合機能の初期化を待つ
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Error Handler テスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--neutral-300);
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: var(--primary-700);
+        }
+        
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: var(--neutral-50);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>GitHub Error Handler テスト</h1>
+        <p>各ボタンをクリックして、エラーハンドラーの動作を確認してください。</p>
+        
+        <!-- 通知テスト -->
+        <div class="test-section">
+            <h3>通知テスト</h3>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testSuccess()">成功メッセージ</button>
+                <button class="btn btn-secondary" onclick="testInfo()">情報メッセージ</button>
+                <button class="btn btn-warning" onclick="testWarning()">警告メッセージ</button>
+                <button class="btn btn-danger" onclick="testError()">エラーメッセージ</button>
+            </div>
+        </div>
+        
+        <!-- エラータイプテスト -->
+        <div class="test-section">
+            <h3>エラータイプテスト</h3>
+            <div class="test-buttons">
+                <button class="btn btn-secondary" onclick="testAuthError()">認証エラー</button>
+                <button class="btn btn-secondary" onclick="testRateLimitError()">レート制限エラー</button>
+                <button class="btn btn-secondary" onclick="testNotFoundError()">404エラー</button>
+                <button class="btn btn-secondary" onclick="testConnectionError()">接続エラー</button>
+                <button class="btn btn-secondary" onclick="testServerError()">サーバーエラー</button>
+            </div>
+        </div>
+        
+        <!-- APIエラーハンドリングテスト -->
+        <div class="test-section">
+            <h3>APIエラーハンドリングテスト</h3>
+            <div class="test-buttons">
+                <button class="btn btn-secondary" onclick="testHandleAPIError401()">401エラー処理</button>
+                <button class="btn btn-secondary" onclick="testHandleAPIError403()">403エラー処理</button>
+                <button class="btn btn-secondary" onclick="testHandleAPIError404()">404エラー処理</button>
+                <button class="btn btn-secondary" onclick="testHandleAPIError500()">500エラー処理</button>
+                <button class="btn btn-secondary" onclick="testHandleNetworkError()">ネットワークエラー処理</button>
+            </div>
+        </div>
+        
+        <!-- 複数通知テスト -->
+        <div class="test-section">
+            <h3>複数通知テスト</h3>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testMultipleNotifications()">複数通知を表示</button>
+                <button class="btn btn-danger" onclick="testClearAllNotifications()">すべての通知をクリア</button>
+            </div>
+        </div>
+        
+        <!-- テスト結果 -->
+        <div class="test-section">
+            <h3>テスト結果</h3>
+            <div id="test-result" class="test-result">
+                テストを実行すると、ここに結果が表示されます。
+            </div>
+        </div>
+    </div>
+    
+    <script src="github-error-handler.js"></script>
+    <script>
+        const errorHandler = new GitHubErrorHandler();
+        const resultDiv = document.getElementById('test-result');
+        
+        function logResult(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.textContent = `[${timestamp}] ${message}\n` + resultDiv.textContent;
+        }
+        
+        // 通知テスト
+        function testSuccess() {
+            errorHandler.showSuccess('これは成功メッセージです');
+            logResult('成功メッセージを表示しました');
+        }
+        
+        function testInfo() {
+            errorHandler.showInfo('これは情報メッセージです');
+            logResult('情報メッセージを表示しました');
+        }
+        
+        function testWarning() {
+            errorHandler.showNotification('これは警告メッセージです', 'warning');
+            logResult('警告メッセージを表示しました');
+        }
+        
+        function testError() {
+            errorHandler.showGenericError('これはエラーメッセージです');
+            logResult('エラーメッセージを表示しました');
+        }
+        
+        // エラータイプテスト
+        function testAuthError() {
+            errorHandler.showAuthenticationError();
+            logResult('認証エラーを表示しました');
+        }
+        
+        function testRateLimitError() {
+            const resetTime = new Date(Date.now() + 60 * 60 * 1000); // 1時間後
+            errorHandler.showRateLimitWarning(resetTime);
+            logResult('レート制限警告を表示しました');
+        }
+        
+        function testNotFoundError() {
+            errorHandler.showNotFoundError({ repository: 'owner/repo' });
+            logResult('404エラーを表示しました');
+        }
+        
+        function testConnectionError() {
+            errorHandler.showConnectionError();
+            logResult('接続エラーを表示しました');
+        }
+        
+        function testServerError() {
+            errorHandler.showServerError(500);
+            logResult('サーバーエラーを表示しました');
+        }
+        
+        // APIエラーハンドリングテスト
+        function testHandleAPIError401() {
+            const error = new GitHubAPIError('Unauthorized', 401, 'Bad credentials');
+            errorHandler.handleAPIError(error);
+            logResult('401エラーを処理しました');
+        }
+        
+        function testHandleAPIError403() {
+            const error = new GitHubAPIError('Forbidden', 403, 'API rate limit exceeded');
+            errorHandler.handleAPIError(error);
+            logResult('403エラー（レート制限）を処理しました');
+        }
+        
+        function testHandleAPIError404() {
+            const error = new GitHubAPIError('Not Found', 404, 'Repository not found');
+            errorHandler.handleAPIError(error, { repository: 'owner/repo' });
+            logResult('404エラーを処理しました');
+        }
+        
+        function testHandleAPIError500() {
+            const error = new GitHubAPIError('Internal Server Error', 500, 'Server error');
+            errorHandler.handleAPIError(error);
+            logResult('500エラーを処理しました');
+        }
+        
+        function testHandleNetworkError() {
+            const error = new TypeError('Failed to fetch');
+            errorHandler.handleAPIError(error);
+            logResult('ネットワークエラーを処理しました');
+        }
+        
+        // 複数通知テスト
+        function testMultipleNotifications() {
+            errorHandler.showSuccess('通知1: 成功');
+            setTimeout(() => errorHandler.showInfo('通知2: 情報'), 500);
+            setTimeout(() => errorHandler.showNotification('通知3: 警告', 'warning'), 1000);
+            setTimeout(() => errorHandler.showGenericError('通知4: エラー'), 1500);
+            logResult('複数の通知を順次表示しました');
+        }
+        
+        function testClearAllNotifications() {
+            errorHandler.clearAllNotifications();
+            logResult('すべての通知をクリアしました');
+        }
+        
+        // 初期メッセージ
+        logResult('GitHub Error Handler テストページを読み込みました');
+    </script>
+</body>
+</html>

@@ -23,6 +23,10 @@
                 <button id="theme-toggle" class="theme-toggle" aria-label="テーマ切り替え" title="ダークモード切り替え">
                     🌙
                 </button>
+                <a href="settings.html" class="btn btn-secondary">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
                 <button id="add-project-btn" class="btn btn-primary">
                     <span class="nav-icon">+</span>
                     プロジェクト追加
@@ -41,6 +45,10 @@
                     <span class="nav-icon">🌙</span>
                     <span class="nav-text">ダークモード切り替え</span>
                 </button>
+                <a href="settings.html" class="mobile-nav-item btn-mobile btn-secondary-mobile">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">設定</span>
+                </a>
                 <button id="mobile-add-project-btn" class="mobile-nav-item btn-mobile btn-primary-mobile">
                     <span class="nav-icon">+</span>
                     <span class="nav-text">プロジェクト追加</span>
@@ -150,6 +158,18 @@
     <!-- エラー・成功メッセージ表示エリア -->
     <div id="message-container"></div>
 
+    <!-- Octokit.js CDN -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="github-error-handler.js"></script>
+    <script src="ci-service-plugin.js"></script>
+    <script src="ci-service-settings-manager.js"></script>
+    <script src="settings.js"></script>
+    <script src="github-ui-controller.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

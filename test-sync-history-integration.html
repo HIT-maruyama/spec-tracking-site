@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同期履歴統合テスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-result.pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-result.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .test-summary {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .test-summary.pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-summary.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>同期履歴UI統合テスト</h1>
+    <p>要件7.1, 7.2, 7.3, 7.4, 7.6の検証</p>
+    
+    <button id="run-all-tests" class="btn btn-primary" style="margin-bottom: 20px;">すべてのテストを実行</button>
+    
+    <!-- 要件7.1: 同期履歴セクションの表示 -->
+    <div class="test-section">
+        <h2>要件7.1: 同期履歴セクションの表示</h2>
+        <p>設定ページにアクセスする時、システムは同期履歴セクションを表示しなければならない</p>
+        <button class="btn btn-secondary run-test" data-test="test71">テスト実行</button>
+        <div id="test71-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <!-- 要件7.2: 同期履歴の詳細表示 -->
+    <div class="test-section">
+        <h2>要件7.2: 同期履歴の詳細表示</h2>
+        <p>同期履歴を表示する時、システムは各同期の実行時刻、対象プロジェクト、結果、取得件数を表示しなければならない</p>
+        <button class="btn btn-secondary run-test" data-test="test72">テスト実行</button>
+        <div id="test72-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <!-- 要件7.3: エラー詳細の記録 -->
+    <div class="test-section">
+        <h2>要件7.3: エラー詳細の記録</h2>
+        <p>同期でエラーが発生した場合、システムはエラーメッセージと詳細情報を履歴に記録しなければならない</p>
+        <button class="btn btn-secondary run-test" data-test="test73">テスト実行</button>
+        <div id="test73-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <!-- 要件7.4: 履歴詳細の確認 -->
+    <div class="test-section">
+        <h2>要件7.4: 履歴詳細の確認</h2>
+        <p>ユーザーが履歴の詳細を確認する時、システムは同期されたCI結果の詳細情報を表示しなければならない</p>
+        <button class="btn btn-secondary run-test" data-test="test74">テスト実行</button>
+        <div id="test74-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <!-- 要件7.6: 履歴のクリア -->
+    <div class="test-section">
+        <h2>要件7.6: 履歴のクリア</h2>
+        <p>ユーザーが履歴をクリアする時、システムはすべての同期履歴を削除し、確認ダイアログを表示しなければならない</p>
+        <button class="btn btn-secondary run-test" data-test="test76">テスト実行</button>
+        <div id="test76-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <div id="test-summary" class="test-summary" style="display: none;"></div>
+    
+    <script src="app.js"></script>
+    <script src="github-settings-manager.js"></script>
+    <script>
+        let testResults = {};
+        
+        function showTestResult(testId, message, passed) {
+            const resultElement = document.getElementById(`${testId}-result`);
+            if (resultElement) {
+                resultElement.textContent = message;
+                resultElement.className = `test-result ${passed ? 'pass' : 'fail'}`;
+                resultElement.style.display = 'block';
+            }
+            testResults[testId] = passed;
+        }
+        
+        function showTestSummary() {
+            const summaryElement = document.getElementById('test-summary');
+            if (!summaryElement) return;
+            
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(r => r).length;
+            const failedTests = totalTests - passedTests;
+            
+            const allPassed = failedTests === 0;
+            
+            summaryElement.textContent = `テスト結果: ${passedTests}/${totalTests} 成功, ${failedTests} 失敗`;
+            summaryElement.className = `test-summary ${allPassed ? 'pass' : 'fail'}`;
+            summaryElement.style.display = 'block';
+        }
+        
+        // 要件7.1のテスト
+        function test71() {
+            try {
+                // 同期履歴セクションが存在するか確認
+                const historySection = document.querySelector('.settings-section h2');
+                const hasHistorySection = historySection && historySection.textContent.includes('同期履歴');
+                
+                if (!hasHistorySection) {
+                    showTestResult('test71', '失敗: 同期履歴セクションが見つかりません', false);
+                    return;
+                }
+                
+                // 履歴コンテナが存在するか確認
+                const historyContainer = document.getElementById('sync-history-container');
+                if (!historyContainer) {
+                    showTestResult('test71', '失敗: 同期履歴コンテナが見つかりません', false);
+                    return;
+                }
+                
+                showTestResult('test71', '成功: 同期履歴セクションが正しく表示されています', true);
+            } catch (error) {
+                showTestResult('test71', `失敗: ${error.message}`, false);
+            }
+        }
+        
+        // 要件7.2のテスト
+        function test72() {
+            try {
+                const settingsManager = new GitHubSettingsManager();
+                
+                // テスト用の同期記録を追加
+                const testRecord = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project',
+                    projectName: 'テストプロジェクト',
+                    status: 'success',
+                    newCIResults: 5,
+                    updatedCIResults: 0,
+                    errors: [],
+                    repositoryUrl: 'https://github.com/test/repo',
+                    workflowRunsProcessed: 5,
+                    apiRequestsUsed: 10,
+                    durationMs: 1234
+                };
+                
+                settingsManager.addSyncRecord(testRecord);
+                
+                // 履歴を取得
+                const history = settingsManager.getSyncHistory();
+                
+                if (history.length === 0) {
+                    showTestResult('test72', '失敗: 同期履歴が取得できません', false);
+                    return;
+                }
+                
+                const record = history[0];
+                
+                // 必須フィールドの確認
+                const hasTimestamp = !!record.timestamp;
+                const hasProjectName = !!record.projectName;
+                const hasStatus = !!record.status;
+                const hasNewCIResults = typeof record.newCIResults === 'number';
+                
+                if (!hasTimestamp || !hasProjectName || !hasStatus || !hasNewCIResults) {
+                    showTestResult('test72', '失敗: 必須フィールドが不足しています', false);
+                    return;
+                }
+                
+                // クリーンアップ
+                settingsManager.clearSyncHistory();
+                
+                showTestResult('test72', '成功: 同期履歴の詳細情報が正しく表示されています', true);
+            } catch (error) {
+                showTestResult('test72', `失敗: ${error.message}`, false);
+            }
+        }
+        
+        // 要件7.3のテスト
+        function test73() {
+            try {
+                const settingsManager = new GitHubSettingsManager();
+                
+                // エラー付きの同期記録を追加
+                const testRecord = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project',
+                    projectName: 'テストプロジェクト',
+                    status: 'failure',
+                    newCIResults: 0,
+                    updatedCIResults: 0,
+                    errors: ['GitHub API接続エラー', 'トークンが無効です'],
+                    repositoryUrl: 'https://github.com/test/repo',
+                    workflowRunsProcessed: 0,
+                    apiRequestsUsed: 1,
+                    durationMs: 500
+                };
+                
+                settingsManager.addSyncRecord(testRecord);
+                
+                // 履歴を取得
+                const history = settingsManager.getSyncHistory();
+                const record = history[0];
+                
+                // エラー情報の確認
+                if (!record.errors || record.errors.length === 0) {
+                    showTestResult('test73', '失敗: エラー情報が記録されていません', false);
+                    settingsManager.clearSyncHistory();
+                    return;
+                }
+                
+                if (record.errors.length !== 2) {
+                    showTestResult('test73', '失敗: エラー数が正しくありません', false);
+                    settingsManager.clearSyncHistory();
+                    return;
+                }
+                
+                // クリーンアップ
+                settingsManager.clearSyncHistory();
+                
+                showTestResult('test73', '成功: エラー詳細が正しく記録されています', true);
+            } catch (error) {
+                showTestResult('test73', `失敗: ${error.message}`, false);
+            }
+        }
+        
+        // 要件7.4のテスト
+        function test74() {
+            try {
+                const settingsManager = new GitHubSettingsManager();
+                
+                // テスト用の同期記録を追加
+                const testRecord = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project',
+                    projectName: 'テストプロジェクト',
+                    status: 'success',
+                    newCIResults: 5,
+                    updatedCIResults: 2,
+                    errors: [],
+                    repositoryUrl: 'https://github.com/test/repo',
+                    workflowRunsProcessed: 5,
+                    apiRequestsUsed: 10,
+                    durationMs: 1234
+                };
+                
+                settingsManager.addSyncRecord(testRecord);
+                
+                // 履歴を取得
+                const history = settingsManager.getSyncHistory();
+                const record = history[0];
+                
+                // 詳細情報の確認
+                const hasDetailedInfo = 
+                    record.newCIResults !== undefined &&
+                    record.updatedCIResults !== undefined &&
+                    record.workflowRunsProcessed !== undefined &&
+                    record.apiRequestsUsed !== undefined &&
+                    record.durationMs !== undefined;
+                
+                if (!hasDetailedInfo) {
+                    showTestResult('test74', '失敗: 詳細情報が不足しています', false);
+                    settingsManager.clearSyncHistory();
+                    return;
+                }
+                
+                // クリーンアップ
+                settingsManager.clearSyncHistory();
+                
+                showTestResult('test74', '成功: 履歴詳細情報が正しく表示されています', true);
+            } catch (error) {
+                showTestResult('test74', `失敗: ${error.message}`, false);
+            }
+        }
+        
+        // 要件7.6のテスト
+        function test76() {
+            try {
+                const settingsManager = new GitHubSettingsManager();
+                
+                // テスト用の同期記録を複数追加
+                for (let i = 0; i < 5; i++) {
+                    const testRecord = {
+                        id: crypto.randomUUID(),
+                        timestamp: new Date(Date.now() - i * 60000).toISOString(),
+                        projectId: `test-project-${i}`,
+                        projectName: `テストプロジェクト${i}`,
+                        status: 'success',
+                        newCIResults: i,
+                        updatedCIResults: 0,
+                        errors: [],
+                        repositoryUrl: `https://github.com/test/repo${i}`,
+                        workflowRunsProcessed: i,
+                        apiRequestsUsed: i * 2,
+                        durationMs: 1000 + i * 100
+                    };
+                    
+                    settingsManager.addSyncRecord(testRecord);
+                }
+                
+                // 履歴が追加されたことを確認
+                let history = settingsManager.getSyncHistory();
+                if (history.length !== 5) {
+                    showTestResult('test76', '失敗: 履歴の追加に失敗しました', false);
+                    return;
+                }
+                
+                // 履歴をクリア
+                const cleared = settingsManager.clearSyncHistory();
+                
+                if (!cleared) {
+                    showTestResult('test76', '失敗: 履歴のクリアに失敗しました', false);
+                    return;
+                }
+                
+                // 履歴が空になったことを確認
+                history = settingsManager.getSyncHistory();
+                if (history.length !== 0) {
+                    showTestResult('test76', '失敗: 履歴が完全にクリアされていません', false);
+                    return;
+                }
+                
+                showTestResult('test76', '成功: 履歴のクリア機能が正しく動作しています', true);
+            } catch (error) {
+                showTestResult('test76', `失敗: ${error.message}`, false);
+            }
+        }
+        
+        // イベントリスナーの設定
+        document.addEventListener('DOMContentLoaded', () => {
+            // 個別テスト実行ボタン
+            document.querySelectorAll('.run-test').forEach(button => {
+                button.addEventListener('click', () => {
+                    const testName = button.getAttribute('data-test');
+                    window[testName]();
+                });
+            });
+            
+            // すべてのテスト実行ボタン
+            document.getElementById('run-all-tests').addEventListener('click', () => {
+                testResults = {};
+                test71();
+                test72();
+                test73();
+                test74();
+                test76();
+                
+                setTimeout(() => {
+                    showTestSummary();
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ネットワーク監視機能テスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--neutral-300);
+            border-radius: 8px;
+        }
+        
+        .test-button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: var(--primary-500);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .test-button:hover {
+            background-color: var(--primary-600);
+        }
+        
+        .test-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background-color: var(--success-50);
+            border: 1px solid var(--success-300);
+            color: var(--success-800);
+        }
+        
+        .error {
+            background-color: var(--error-50);
+            border: 1px solid var(--error-300);
+            color: var(--error-800);
+        }
+        
+        .info {
+            background-color: var(--primary-50);
+            border: 1px solid var(--primary-300);
+            color: var(--primary-800);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .status-card {
+            background-color: var(--neutral-50);
+            border: 1px solid var(--neutral-200);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .status-card h4 {
+            margin: 0 0 8px 0;
+            color: var(--neutral-800);
+        }
+        
+        .status-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>ネットワーク監視機能テスト</h1>
+        
+        <!-- ネットワーク状態表示 -->
+        <div class="test-section">
+            <h2>現在のネットワーク状態</h2>
+            <div class="status-grid">
+                <div class="status-card">
+                    <h4>接続状態</h4>
+                    <div class="status-value">
+                        <span class="network-status-indicator" id="current-status">確認中...</span>
+                    </div>
+                </div>
+                <div class="status-card">
+                    <h4>接続品質</h4>
+                    <div class="status-value" id="connection-quality">測定中...</div>
+                </div>
+                <div class="status-card">
+                    <h4>保留操作</h4>
+                    <div class="status-value" id="queued-count">0件</div>
+                </div>
+                <div class="status-card">
+                    <h4>再接続試行</h4>
+                    <div class="status-value" id="reconnect-count">0回</div>
+                </div>
+            </div>
+            
+            <button class="test-button" onclick="updateNetworkStatus()">状態更新</button>
+            <button class="test-button" onclick="showNetworkDetails()">詳細表示</button>
+            <div id="network-details" class="test-result info"></div>
+        </div>
+        
+        <!-- 接続テスト -->
+        <div class="test-section">
+            <h2>接続テスト</h2>
+            <button class="test-button" onclick="testConnection()">接続テスト実行</button>
+            <button class="test-button" onclick="testConnectionQuality()">接続品質測定</button>
+            <div id="connection-test-result" class="test-result info"></div>
+        </div>
+        
+        <!-- オフライン/オンラインシミュレーション -->
+        <div class="test-section">
+            <h2>オフライン/オンラインシミュレーション</h2>
+            <button class="test-button" onclick="simulateOffline()">オフライン状態をシミュレート</button>
+            <button class="test-button" onclick="simulateOnline()">オンライン状態をシミュレート</button>
+            <button class="test-button" onclick="simulatePoorConnection()">接続不良をシミュレート</button>
+            <div id="simulation-result" class="test-result info"></div>
+        </div>
+        
+        <!-- オフラインキューテスト -->
+        <div class="test-section">
+            <h2>オフラインキュー機能</h2>
+            <button class="test-button" onclick="addToQueue()">操作をキューに追加</button>
+            <button class="test-button" onclick="processQueue()">キューを処理</button>
+            <button class="test-button" onclick="clearQueue()">キューをクリア</button>
+            <div id="queue-result" class="test-result info"></div>
+        </div>
+        
+        <!-- UI状態テスト -->
+        <div class="test-section">
+            <h2>UI状態テスト</h2>
+            <p>以下のボタンはネットワーク状態に応じて有効/無効が切り替わります：</p>
+            <button class="test-button sync-button">同期ボタン（テスト用）</button>
+            <button class="test-button manual-sync-button">手動同期ボタン（テスト用）</button>
+            <label>
+                <input type="checkbox" class="auto-sync-toggle"> 自動同期（テスト用）
+            </label>
+            
+            <div class="github-feature" style="margin-top: 16px; padding: 12px; border: 1px solid var(--neutral-300); border-radius: 4px;">
+                <p>GitHub統合機能（テスト用）</p>
+                <button class="test-button">GitHub API呼び出し</button>
+            </div>
+            
+            <div class="manual-mode-indicator" id="manual-mode-test">
+                手動入力モード (オフライン)
+            </div>
+            
+            <div id="ui-test-result" class="test-result info"></div>
+        </div>
+        
+        <!-- イベントリスナーテスト -->
+        <div class="test-section">
+            <h2>イベントリスナーテスト</h2>
+            <button class="test-button" onclick="addTestListener()">テストリスナーを追加</button>
+            <button class="test-button" onclick="removeTestListener()">テストリスナーを削除</button>
+            <div id="listener-result" class="test-result info"></div>
+        </div>
+    </div>
+
+    <!-- 必要なスクリプト -->
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        let networkMonitor;
+        let testListener;
+        
+        // テスト用の関数
+        
+        function updateResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.className = `test-result ${type}`;
+            }
+        }
+        
+        // ネットワーク状態更新
+        function updateNetworkStatus() {
+            if (!networkMonitor) {
+                updateResult('network-details', 'NetworkMonitorが初期化されていません', 'error');
+                return;
+            }
+            
+            const status = networkMonitor.getStatus();
+            
+            // 状態カードを更新
+            document.getElementById('current-status').textContent = 
+                status.isOnline ? `オンライン (${status.connectionQuality})` : 'オフライン';
+            document.getElementById('current-status').className = 
+                `network-status-indicator ${status.isOnline ? 'online' : 'offline'} ${status.connectionQuality}`;
+            
+            document.getElementById('connection-quality').textContent = status.connectionQuality;
+            document.getElementById('queued-count').textContent = `${status.queuedOperations}件`;
+            document.getElementById('reconnect-count').textContent = `${status.reconnectAttempts}回`;
+        }
+        
+        function showNetworkDetails() {
+            if (!networkMonitor) {
+                updateResult('network-details', 'NetworkMonitorが初期化されていません', 'error');
+                return;
+            }
+            
+            const status = networkMonitor.getStatus();
+            const details = `
+ネットワーク状態詳細:
+- オンライン: ${status.isOnline}
+- 接続品質: ${status.connectionQuality}
+- 最終オンライン時刻: ${status.lastOnlineTime ? status.lastOnlineTime.toLocaleString() : 'なし'}
+- 最終オフライン時刻: ${status.lastOfflineTime ? status.lastOfflineTime.toLocaleString() : 'なし'}
+- 保留操作数: ${status.queuedOperations}
+- 再接続試行回数: ${status.reconnectAttempts}
+            `.trim();
+            
+            updateResult('network-details', details, 'info');
+        }
+        
+        // 接続テスト
+        async function testConnection() {
+            updateResult('connection-test-result', '接続テスト中...', 'info');
+            
+            try {
+                const isConnected = await networkMonitor.testConnection();
+                updateResult('connection-test-result', 
+                    `接続テスト結果: ${isConnected ? '成功' : '失敗'}`, 
+                    isConnected ? 'success' : 'error');
+            } catch (error) {
+                updateResult('connection-test-result', `接続テストエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testConnectionQuality() {
+            updateResult('connection-test-result', '接続品質測定中...', 'info');
+            
+            try {
+                await networkMonitor.checkConnectionQuality();
+                const status = networkMonitor.getStatus();
+                updateResult('connection-test-result', 
+                    `接続品質: ${status.connectionQuality}`, 'success');
+                updateNetworkStatus();
+            } catch (error) {
+                updateResult('connection-test-result', `品質測定エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        // シミュレーション
+        function simulateOffline() {
+            networkMonitor.handleOffline();
+            updateResult('simulation-result', 'オフライン状態をシミュレートしました', 'info');
+            updateNetworkStatus();
+        }
+        
+        async function simulateOnline() {
+            await networkMonitor.handleOnline();
+            updateResult('simulation-result', 'オンライン状態をシミュレートしました', 'success');
+            updateNetworkStatus();
+        }
+        
+        function simulatePoorConnection() {
+            // 接続品質を強制的に'poor'に設定
+            networkMonitor.connectionQuality = 'poor';
+            networkMonitor.updateConnectionStatus();
+            updateResult('simulation-result', '接続不良状態をシミュレートしました', 'info');
+            updateNetworkStatus();
+        }
+        
+        // オフラインキューテスト
+        function addToQueue() {
+            const operation = async () => {
+                console.log('テスト操作が実行されました');
+                return 'テスト操作完了';
+            };
+            
+            networkMonitor.queueOperation(operation, `テスト操作 ${Date.now()}`);
+            updateResult('queue-result', 'テスト操作をキューに追加しました', 'success');
+            updateNetworkStatus();
+        }
+        
+        async function processQueue() {
+            updateResult('queue-result', 'キューを処理中...', 'info');
+            
+            try {
+                await networkMonitor.processOfflineQueue();
+                updateResult('queue-result', 'キューの処理が完了しました', 'success');
+                updateNetworkStatus();
+            } catch (error) {
+                updateResult('queue-result', `キュー処理エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearQueue() {
+            networkMonitor.offlineQueue = [];
+            updateResult('queue-result', 'キューをクリアしました', 'success');
+            updateNetworkStatus();
+        }
+        
+        // イベントリスナーテスト
+        function addTestListener() {
+            if (testListener) {
+                updateResult('listener-result', 'テストリスナーは既に追加されています', 'info');
+                return;
+            }
+            
+            testListener = (event, status) => {
+                const message = `イベント受信: ${event} - オンライン: ${status.isOnline}, 品質: ${status.connectionQuality}`;
+                updateResult('listener-result', message, 'success');
+            };
+            
+            networkMonitor.addListener(testListener);
+            updateResult('listener-result', 'テストリスナーを追加しました', 'success');
+        }
+        
+        function removeTestListener() {
+            if (!testListener) {
+                updateResult('listener-result', 'テストリスナーが見つかりません', 'error');
+                return;
+            }
+            
+            networkMonitor.removeListener(testListener);
+            testListener = null;
+            updateResult('listener-result', 'テストリスナーを削除しました', 'success');
+        }
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            // NetworkMonitorインスタンスを取得
+            networkMonitor = getNetworkMonitor();
+            
+            // 初期状態を表示
+            setTimeout(() => {
+                updateNetworkStatus();
+                showNetworkDetails();
+            }, 1000);
+            
+            console.log('NetworkMonitor テストページが読み込まれました');
+        });
+    </script>
+</body>
+</html>

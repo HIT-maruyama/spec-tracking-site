@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoSyncScheduler テスト</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+        }
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-entry.error {
+            color: #ef5350;
+        }
+        .log-entry.success {
+            color: #66bb6a;
+        }
+        .log-entry.info {
+            color: #42a5f5;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        .info-card h4 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .info-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 AutoSyncScheduler テスト</h1>
+        
+        <div class="test-section">
+            <h3>1. スケジューラー制御</h3>
+            <div class="controls">
+                <button onclick="startAutoSync()">自動同期を開始</button>
+                <button onclick="stopAutoSync()">自動同期を停止</button>
+                <button onclick="pauseAutoSync()">一時停止</button>
+                <button onclick="resumeAutoSync()">再開</button>
+                <button onclick="getSchedulerStatus()">状態を確認</button>
+            </div>
+            <div id="scheduler-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 手動同期テスト</h3>
+            <div class="controls">
+                <button onclick="syncAllProjects()">全プロジェクトを同期</button>
+                <button onclick="syncSingleProject()">単一プロジェクトを同期</button>
+            </div>
+            <div id="sync-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 同期統計</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>実行中</h4>
+                    <div class="value" id="is-running">-</div>
+                </div>
+                <div class="info-card">
+                    <h4>一時停止中</h4>
+                    <div class="value" id="is-paused">-</div>
+                </div>
+                <div class="info-card">
+                    <h4>同期間隔</h4>
+                    <div class="value" id="sync-interval">-</div>
+                </div>
+                <div class="info-card">
+                    <h4>最終同期</h4>
+                    <div class="value" id="last-sync">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. ログ</h3>
+            <button onclick="clearLog()">ログをクリア</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <!-- 依存ファイルを読み込み -->
+    <script src="https://cdn.skypack.dev/@octokit/core"></script>
+    <script src="token-encryption.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-settings-manager.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="app.js"></script>
+    <script src="github-integration.js"></script>
+
+    <script>
+        // ログ機能
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('ログをクリアしました');
+        }
+
+        // スケジューラーインスタンスを取得
+        let scheduler = null;
+
+        function initScheduler() {
+            if (!scheduler) {
+                scheduler = AutoSyncScheduler.getInstance();
+                log('AutoSyncSchedulerを初期化しました', 'success');
+            }
+            return scheduler;
+        }
+
+        // 自動同期を開始
+        function startAutoSync() {
+            try {
+                const scheduler = initScheduler();
+                const interval = 1; // テスト用に1分間隔
+                scheduler.start(interval);
+                log(`自動同期を開始しました (間隔: ${interval}分)`, 'success');
+                updateStatus('自動同期が開始されました', 'success');
+                updateSchedulerInfo();
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 自動同期を停止
+        function stopAutoSync() {
+            try {
+                const scheduler = initScheduler();
+                scheduler.stop();
+                log('自動同期を停止しました', 'info');
+                updateStatus('自動同期が停止されました', 'warning');
+                updateSchedulerInfo();
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 一時停止
+        function pauseAutoSync() {
+            try {
+                const scheduler = initScheduler();
+                scheduler.pause();
+                log('自動同期を一時停止しました', 'info');
+                updateStatus('自動同期が一時停止されました', 'warning');
+                updateSchedulerInfo();
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 再開
+        function resumeAutoSync() {
+            try {
+                const scheduler = initScheduler();
+                scheduler.resume();
+                log('自動同期を再開しました', 'success');
+                updateStatus('自動同期が再開されました', 'success');
+                updateSchedulerInfo();
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 状態を確認
+        function getSchedulerStatus() {
+            try {
+                const scheduler = initScheduler();
+                const status = scheduler.getStatus();
+                log(`スケジューラー状態: ${JSON.stringify(status, null, 2)}`, 'info');
+                updateStatus(`状態を取得しました`, 'success');
+                updateSchedulerInfo();
+            } catch (error) {
+                log(`エラー: ${error.message}`, 'error');
+                updateStatus(`エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 全プロジェクトを同期
+        async function syncAllProjects() {
+            try {
+                const scheduler = initScheduler();
+                updateSyncStatus('同期を開始しています...', 'info');
+                log('全プロジェクトの同期を開始...', 'info');
+                
+                const results = await scheduler.syncAllProjects();
+                
+                log(`同期完了: ${results.length}プロジェクト`, 'success');
+                updateSyncStatus(`同期完了: ${results.length}プロジェクト`, 'success');
+                
+                results.forEach(result => {
+                    const status = result.success ? 'success' : 'error';
+                    log(`  - ${result.projectName}: ${result.newCIResults}件の新しいCI結果`, status);
+                });
+            } catch (error) {
+                log(`同期エラー: ${error.message}`, 'error');
+                updateSyncStatus(`同期エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 単一プロジェクトを同期
+        async function syncSingleProject() {
+            try {
+                const scheduler = initScheduler();
+                
+                // テスト用のプロジェクトIDを取得
+                const dataManager = new DataManager();
+                const projects = dataManager.getAllProjects();
+                const githubProjects = projects.filter(p => p.githubRepository);
+                
+                if (githubProjects.length === 0) {
+                    log('GitHubリポジトリが設定されたプロジェクトがありません', 'warning');
+                    updateSyncStatus('GitHubリポジトリが設定されたプロジェクトがありません', 'warning');
+                    return;
+                }
+                
+                const projectId = githubProjects[0].id;
+                updateSyncStatus(`プロジェクト ${githubProjects[0].name} を同期中...`, 'info');
+                log(`プロジェクト ${githubProjects[0].name} の同期を開始...`, 'info');
+                
+                const result = await scheduler.syncProject(projectId);
+                
+                const status = result.success ? 'success' : 'error';
+                log(`同期完了: ${result.projectName} - ${result.newCIResults}件の新しいCI結果`, status);
+                updateSyncStatus(`同期完了: ${result.newCIResults}件の新しいCI結果`, status);
+            } catch (error) {
+                log(`同期エラー: ${error.message}`, 'error');
+                updateSyncStatus(`同期エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // UI更新関数
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('scheduler-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function updateSyncStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('sync-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function updateSchedulerInfo() {
+            try {
+                const scheduler = initScheduler();
+                const status = scheduler.getStatus();
+                
+                document.getElementById('is-running').textContent = status.isRunning ? 'はい' : 'いいえ';
+                document.getElementById('is-paused').textContent = status.isPaused ? 'はい' : 'いいえ';
+                document.getElementById('sync-interval').textContent = `${status.interval}分`;
+                document.getElementById('last-sync').textContent = status.pauseUntilTime 
+                    ? new Date(status.pauseUntilTime).toLocaleTimeString('ja-JP')
+                    : '-';
+            } catch (error) {
+                log(`情報更新エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // 同期完了イベントのリスナー
+        window.addEventListener('syncCompleted', (event) => {
+            const { results, timestamp } = event.detail;
+            log(`同期完了イベントを受信: ${results.length}プロジェクト (${timestamp})`, 'success');
+        });
+
+        // ページ読み込み時の初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            log('AutoSyncSchedulerテストページを読み込みました', 'success');
+            log('注意: 実際の同期を行うにはGitHubリポジトリが設定されたプロジェクトとアクセストークンが必要です', 'info');
+            initScheduler();
+            updateSchedulerInfo();
+        });
+    </script>
+</body>
+</html>

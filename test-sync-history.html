@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同期履歴UIテスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-result.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-result.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>同期履歴UI実装テスト</h1>
+    
+    <!-- テスト1: 同期履歴の表示 -->
+    <div class="test-section">
+        <h2>テスト1: 同期履歴の表示</h2>
+        <div class="test-controls">
+            <button id="test1-add-success" class="btn btn-primary">成功記録を追加</button>
+            <button id="test1-add-failure" class="btn btn-danger">失敗記録を追加</button>
+            <button id="test1-add-partial" class="btn btn-secondary">部分成功記録を追加</button>
+            <button id="test1-clear" class="btn btn-secondary">履歴をクリア</button>
+        </div>
+        <div id="test1-result" class="test-result" style="display: none;"></div>
+        
+        <div class="setting-group">
+            <div id="test1-sync-history-container" class="sync-history-container">
+                <div class="sync-history-empty">
+                    <p>同期履歴がありません</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- テスト2: 履歴詳細の表示 -->
+    <div class="test-section">
+        <h2>テスト2: 履歴詳細の表示</h2>
+        <div class="test-controls">
+            <button id="test2-add-with-errors" class="btn btn-primary">エラー付き記録を追加</button>
+            <button id="test2-add-multiple" class="btn btn-primary">複数記録を追加</button>
+        </div>
+        <div id="test2-result" class="test-result" style="display: none;"></div>
+        
+        <div class="setting-group">
+            <div id="test2-sync-history-container" class="sync-history-container">
+                <div class="sync-history-empty">
+                    <p>同期履歴がありません</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- テスト3: 履歴クリア機能 -->
+    <div class="test-section">
+        <h2>テスト3: 履歴クリア機能</h2>
+        <div class="test-controls">
+            <button id="test3-populate" class="btn btn-primary">10件の履歴を追加</button>
+            <button id="test3-clear-confirm" class="btn btn-danger">履歴をクリア（確認あり）</button>
+        </div>
+        <div id="test3-result" class="test-result" style="display: none;"></div>
+        
+        <div class="setting-group">
+            <div class="sync-history-controls">
+                <button id="test3-refresh" class="btn btn-secondary">履歴を更新</button>
+                <button id="test3-clear" class="btn btn-danger">履歴をクリア</button>
+            </div>
+            <div id="test3-sync-history-container" class="sync-history-container">
+                <div class="sync-history-empty">
+                    <p>同期履歴がありません</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 確認ダイアログ -->
+    <div id="confirm-dialog" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirm-dialog-title">確認</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-dialog-message"></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="confirm-dialog-cancel">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="confirm-dialog-confirm">確認</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- メッセージ表示エリア -->
+    <div id="message-container"></div>
+    
+    <script src="app.js"></script>
+    <script src="github-settings-manager.js"></script>
+    <script>
+        // テスト用のヘルパー関数
+        function showTestResult(testId, message, isSuccess = true) {
+            const resultElement = document.getElementById(`${testId}-result`);
+            if (resultElement) {
+                resultElement.textContent = message;
+                resultElement.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+                resultElement.style.display = 'block';
+            }
+        }
+        
+        function createSyncHistoryItem(record) {
+            const statusClass = record.status === 'success' ? 'success' : 
+                               record.status === 'partial' ? 'warning' : 'error';
+            
+            const statusText = record.status === 'success' ? '成功' :
+                              record.status === 'partial' ? '部分成功' : '失敗';
+
+            return `
+                <div class="sync-history-item" data-record-id="${record.id}">
+                    <div class="sync-history-header">
+                        <div class="sync-history-time">
+                            ${formatRelativeTime(record.timestamp)}
+                        </div>
+                        <div class="sync-history-status ${statusClass}">
+                            ${statusText}
+                        </div>
+                    </div>
+                    <div class="sync-history-details">
+                        <div class="sync-history-project">
+                            ${record.projectName}
+                        </div>
+                        <div class="sync-history-stats">
+                            新規: ${record.newCIResults}件 | 
+                            API使用: ${record.apiRequestsUsed}回 |
+                            処理時間: ${record.durationMs}ms
+                        </div>
+                        ${record.errors.length > 0 ? `
+                            <div class="sync-history-errors">
+                                ${record.errors.map(error => `<div class="error-message">${error}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="sync-history-actions">
+                            <button class="btn-link view-details-btn" data-record-id="${record.id}">
+                                詳細を表示
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showSyncHistoryDetails(record) {
+            const statusClass = record.status === 'success' ? 'success' : 
+                               record.status === 'partial' ? 'warning' : 'error';
+            
+            const statusText = record.status === 'success' ? '成功' :
+                              record.status === 'partial' ? '部分成功' : '失敗';
+            
+            const timestamp = new Date(record.timestamp);
+            
+            const detailsHTML = `
+                <div class="sync-details-container">
+                    <div class="sync-details-section">
+                        <h4>基本情報</h4>
+                        <table class="sync-details-table">
+                            <tr>
+                                <th>実行時刻</th>
+                                <td>${timestamp.toLocaleString('ja-JP')}</td>
+                            </tr>
+                            <tr>
+                                <th>プロジェクト</th>
+                                <td>${record.projectName}</td>
+                            </tr>
+                            <tr>
+                                <th>リポジトリ</th>
+                                <td><a href="${record.repositoryUrl}" target="_blank" rel="noopener noreferrer">${record.repositoryUrl}</a></td>
+                            </tr>
+                            <tr>
+                                <th>ステータス</th>
+                                <td><span class="sync-history-status ${statusClass}">${statusText}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="sync-details-section">
+                        <h4>同期結果</h4>
+                        <table class="sync-details-table">
+                            <tr>
+                                <th>新規CI結果</th>
+                                <td>${record.newCIResults}件</td>
+                            </tr>
+                            <tr>
+                                <th>更新CI結果</th>
+                                <td>${record.updatedCIResults}件</td>
+                            </tr>
+                            <tr>
+                                <th>処理ワークフロー数</th>
+                                <td>${record.workflowRunsProcessed}件</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="sync-details-section">
+                        <h4>パフォーマンス</h4>
+                        <table class="sync-details-table">
+                            <tr>
+                                <th>処理時間</th>
+                                <td>${record.durationMs}ms (${(record.durationMs / 1000).toFixed(2)}秒)</td>
+                            </tr>
+                            <tr>
+                                <th>API使用回数</th>
+                                <td>${record.apiRequestsUsed}回</td>
+                            </tr>
+                            <tr>
+                                <th>平均処理時間/ワークフロー</th>
+                                <td>${record.workflowRunsProcessed > 0 ? Math.round(record.durationMs / record.workflowRunsProcessed) : 0}ms</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    ${record.errors.length > 0 ? `
+                        <div class="sync-details-section">
+                            <h4>エラー詳細</h4>
+                            <div class="sync-details-errors">
+                                ${record.errors.map((error, index) => `
+                                    <div class="error-detail-item">
+                                        <strong>エラー ${index + 1}:</strong>
+                                        <pre>${error}</pre>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // 詳細ダイアログを表示
+            showDetailsDialog('同期履歴の詳細', detailsHTML);
+        }
+        
+        function showDetailsDialog(title, content) {
+            // 既存のダイアログがあれば削除
+            const existingDialog = document.getElementById('details-dialog');
+            if (existingDialog) {
+                existingDialog.remove();
+            }
+            
+            // 新しいダイアログを作成
+            const dialog = document.createElement('div');
+            dialog.id = 'details-dialog';
+            dialog.className = 'modal';
+            dialog.style.display = 'flex';
+            dialog.innerHTML = `
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" aria-label="閉じる">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-details-btn">閉じる</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            
+            // イベントリスナーを設定
+            const closeBtn = dialog.querySelector('.close-details-btn');
+            const modalClose = dialog.querySelector('.modal-close');
+            
+            const closeDialog = () => {
+                dialog.remove();
+            };
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeDialog);
+            }
+            
+            if (modalClose) {
+                modalClose.addEventListener('click', closeDialog);
+            }
+            
+            // 背景クリックで閉じる
+            dialog.addEventListener('click', (e) => {
+                if (e.target === dialog) {
+                    closeDialog();
+                }
+            });
+        }
+        
+        function updateSyncHistoryDisplay(containerId, settingsManager) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const history = settingsManager.getSyncHistory();
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="sync-history-empty">
+                        <p>同期履歴がありません</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const historyHTML = history.map(record => createSyncHistoryItem(record)).join('');
+            container.innerHTML = `
+                <div class="sync-history-list">
+                    ${historyHTML}
+                </div>
+            `;
+            
+            // 詳細表示ボタンのイベントリスナーを設定
+            const detailButtons = container.querySelectorAll('.view-details-btn');
+            detailButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const recordId = button.getAttribute('data-record-id');
+                    const record = history.find(r => r.id === recordId);
+                    if (record) {
+                        showSyncHistoryDetails(record);
+                    }
+                });
+            });
+        }
+        
+        // テスト実装
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsManager = new GitHubSettingsManager();
+            
+            // テスト1: 同期履歴の表示
+            document.getElementById('test1-add-success').addEventListener('click', () => {
+                const record = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project-1',
+                    projectName: 'テストプロジェクト1',
+                    status: 'success',
+                    newCIResults: 5,
+                    updatedCIResults: 0,
+                    errors: [],
+                    repositoryUrl: 'https://github.com/test/repo',
+                    workflowRunsProcessed: 5,
+                    apiRequestsUsed: 10,
+                    durationMs: 1234
+                };
+                
+                settingsManager.addSyncRecord(record);
+                updateSyncHistoryDisplay('test1-sync-history-container', settingsManager);
+                showTestResult('test1', '成功記録を追加しました');
+            });
+            
+            document.getElementById('test1-add-failure').addEventListener('click', () => {
+                const record = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project-2',
+                    projectName: 'テストプロジェクト2',
+                    status: 'failure',
+                    newCIResults: 0,
+                    updatedCIResults: 0,
+                    errors: ['GitHub API接続エラー'],
+                    repositoryUrl: 'https://github.com/test/repo2',
+                    workflowRunsProcessed: 0,
+                    apiRequestsUsed: 1,
+                    durationMs: 500
+                };
+                
+                settingsManager.addSyncRecord(record);
+                updateSyncHistoryDisplay('test1-sync-history-container', settingsManager);
+                showTestResult('test1', '失敗記録を追加しました');
+            });
+            
+            document.getElementById('test1-add-partial').addEventListener('click', () => {
+                const record = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project-3',
+                    projectName: 'テストプロジェクト3',
+                    status: 'partial',
+                    newCIResults: 3,
+                    updatedCIResults: 0,
+                    errors: ['一部のワークフローの取得に失敗'],
+                    repositoryUrl: 'https://github.com/test/repo3',
+                    workflowRunsProcessed: 3,
+                    apiRequestsUsed: 8,
+                    durationMs: 2000
+                };
+                
+                settingsManager.addSyncRecord(record);
+                updateSyncHistoryDisplay('test1-sync-history-container', settingsManager);
+                showTestResult('test1', '部分成功記録を追加しました');
+            });
+            
+            document.getElementById('test1-clear').addEventListener('click', () => {
+                settingsManager.clearSyncHistory();
+                updateSyncHistoryDisplay('test1-sync-history-container', settingsManager);
+                showTestResult('test1', '履歴をクリアしました');
+            });
+            
+            // テスト2: 履歴詳細の表示
+            document.getElementById('test2-add-with-errors').addEventListener('click', () => {
+                const record = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'test-project-4',
+                    projectName: 'エラー詳細テストプロジェクト',
+                    status: 'failure',
+                    newCIResults: 0,
+                    updatedCIResults: 0,
+                    errors: [
+                        'GitHub API接続エラー: 401 Unauthorized',
+                        'トークンの有効期限が切れています',
+                        'リポジトリへのアクセス権限がありません'
+                    ],
+                    repositoryUrl: 'https://github.com/test/error-repo',
+                    workflowRunsProcessed: 0,
+                    apiRequestsUsed: 1,
+                    durationMs: 300
+                };
+                
+                settingsManager.addSyncRecord(record);
+                updateSyncHistoryDisplay('test2-sync-history-container', settingsManager);
+                showTestResult('test2', 'エラー付き記録を追加しました');
+            });
+            
+            document.getElementById('test2-add-multiple').addEventListener('click', () => {
+                for (let i = 0; i < 5; i++) {
+                    const record = {
+                        id: crypto.randomUUID(),
+                        timestamp: new Date(Date.now() - i * 60000).toISOString(),
+                        projectId: `test-project-${i}`,
+                        projectName: `プロジェクト ${i + 1}`,
+                        status: i % 3 === 0 ? 'success' : i % 3 === 1 ? 'partial' : 'failure',
+                        newCIResults: i % 3 === 0 ? 5 : i % 3 === 1 ? 2 : 0,
+                        updatedCIResults: 0,
+                        errors: i % 3 === 2 ? ['同期エラー'] : [],
+                        repositoryUrl: `https://github.com/test/repo${i}`,
+                        workflowRunsProcessed: i % 3 === 0 ? 5 : i % 3 === 1 ? 2 : 0,
+                        apiRequestsUsed: 5 + i,
+                        durationMs: 1000 + i * 200
+                    };
+                    
+                    settingsManager.addSyncRecord(record);
+                }
+                
+                updateSyncHistoryDisplay('test2-sync-history-container', settingsManager);
+                showTestResult('test2', '5件の記録を追加しました');
+            });
+            
+            // テスト3: 履歴クリア機能
+            document.getElementById('test3-populate').addEventListener('click', () => {
+                for (let i = 0; i < 10; i++) {
+                    const record = {
+                        id: crypto.randomUUID(),
+                        timestamp: new Date(Date.now() - i * 300000).toISOString(),
+                        projectId: `test-project-${i}`,
+                        projectName: `プロジェクト ${i + 1}`,
+                        status: 'success',
+                        newCIResults: Math.floor(Math.random() * 10),
+                        updatedCIResults: 0,
+                        errors: [],
+                        repositoryUrl: `https://github.com/test/repo${i}`,
+                        workflowRunsProcessed: Math.floor(Math.random() * 10),
+                        apiRequestsUsed: Math.floor(Math.random() * 20),
+                        durationMs: Math.floor(Math.random() * 3000)
+                    };
+                    
+                    settingsManager.addSyncRecord(record);
+                }
+                
+                updateSyncHistoryDisplay('test3-sync-history-container', settingsManager);
+                showTestResult('test3', '10件の履歴を追加しました');
+            });
+            
+            document.getElementById('test3-refresh').addEventListener('click', () => {
+                updateSyncHistoryDisplay('test3-sync-history-container', settingsManager);
+                showTestResult('test3', '履歴を更新しました');
+            });
+            
+            document.getElementById('test3-clear').addEventListener('click', () => {
+                settingsManager.clearSyncHistory();
+                updateSyncHistoryDisplay('test3-sync-history-container', settingsManager);
+                showTestResult('test3', '履歴をクリアしました');
+            });
+            
+            document.getElementById('test3-clear-confirm').addEventListener('click', () => {
+                showConfirmDialog(
+                    '履歴のクリア',
+                    'すべての同期履歴を削除しますか？この操作は取り消せません。',
+                    () => {
+                        settingsManager.clearSyncHistory();
+                        updateSyncHistoryDisplay('test3-sync-history-container', settingsManager);
+                        showTestResult('test3', '履歴をクリアしました（確認ダイアログ経由）');
+                    }
+                );
+            });
+            
+            // 確認ダイアログの実装
+            let pendingConfirmAction = null;
+            
+            function showConfirmDialog(title, message, onConfirm) {
+                const dialog = document.getElementById('confirm-dialog');
+                const titleElement = document.getElementById('confirm-dialog-title');
+                const messageElement = document.getElementById('confirm-dialog-message');
+                
+                if (!dialog || !titleElement || !messageElement) return;
+                
+                titleElement.textContent = title;
+                messageElement.textContent = message;
+                
+                pendingConfirmAction = onConfirm;
+                dialog.style.display = 'flex';
+            }
+            
+            function hideConfirmDialog() {
+                const dialog = document.getElementById('confirm-dialog');
+                if (dialog) {
+                    dialog.style.display = 'none';
+                }
+                pendingConfirmAction = null;
+            }
+            
+            document.getElementById('confirm-dialog-cancel').addEventListener('click', hideConfirmDialog);
+            
+            document.getElementById('confirm-dialog-confirm').addEventListener('click', () => {
+                if (pendingConfirmAction) {
+                    pendingConfirmAction();
+                }
+                hideConfirmDialog();
+            });
+            
+            // 初期表示を更新
+            updateSyncHistoryDisplay('test1-sync-history-container', settingsManager);
+            updateSyncHistoryDisplay('test2-sync-history-container', settingsManager);
+            updateSyncHistoryDisplay('test3-sync-history-container', settingsManager);
+        });
+    </script>
+</body>
+</html>

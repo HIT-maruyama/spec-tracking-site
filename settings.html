@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - 仕様駆動開発管理サイト</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>設定</h1>
+            
+            <!-- モバイルハンバーガーメニューボタン -->
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="メニューを開く" aria-expanded="false">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            
+            <!-- デスクトップナビゲーション -->
+            <nav class="desktop-nav">
+                <button id="theme-toggle" class="theme-toggle" aria-label="テーマ切り替え" title="ダークモード切り替え">
+                    🌙
+                </button>
+                <a href="index.html" class="btn btn-secondary">
+                    <span class="nav-icon">←</span>
+                    プロジェクト一覧に戻る
+                </a>
+            </nav>
+        </div>
+        
+        <!-- モバイルナビゲーションメニュー -->
+        <nav id="mobile-nav" class="mobile-nav" aria-hidden="true">
+            <div class="mobile-nav-content">
+                <button id="mobile-theme-toggle" class="mobile-nav-item theme-toggle-mobile" aria-label="テーマ切り替え">
+                    <span class="nav-icon">🌙</span>
+                    <span class="nav-text">ダークモード切り替え</span>
+                </button>
+                <a href="index.html" class="mobile-nav-item btn-mobile btn-secondary-mobile">
+                    <span class="nav-icon">←</span>
+                    <span class="nav-text">プロジェクト一覧に戻る</span>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- ネットワーク状態セクション -->
+            <section class="settings-section">
+                <div class="network-status-panel">
+                    <h3>ネットワーク状態</h3>
+                    <div class="network-status-details">
+                        <div class="network-status-item">
+                            <span class="network-status-label">接続状態:</span>
+                            <span class="network-status-indicator" id="network-status">確認中...</span>
+                        </div>
+                        <div class="network-status-item">
+                            <span class="network-status-label">保留操作:</span>
+                            <span class="network-status-value" id="queued-operations">0件</span>
+                        </div>
+                        <div class="network-status-item">
+                            <span class="network-status-label">最終オンライン:</span>
+                            <span class="network-status-value" id="last-online">-</span>
+                        </div>
+                        <div class="network-status-item">
+                            <span class="network-status-label">再接続試行:</span>
+                            <span class="network-status-value" id="reconnect-attempts">0回</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <button id="test-network-btn" class="btn btn-secondary">接続テスト</button>
+                        <button id="process-queue-btn" class="btn btn-secondary" disabled>保留操作を処理</button>
+                    </div>
+                </div>
+                <div class="manual-mode-indicator" id="manual-mode-indicator">
+                    手動入力モード (オフライン)
+                </div>
+            </section>
+
+            <!-- CI/CDサービス選択セクション -->
+            <section class="settings-section ci-service-selection">
+                <h2>CI/CDサービス</h2>
+                <div class="setting-group">
+                    <p class="setting-description">
+                        使用するCI/CDサービスを選択してください。複数のサービスを同時に利用できます。
+                    </p>
+                    <div id="ci-service-selector-container"></div>
+                </div>
+            </section>
+
+            <!-- GitHub統合設定セクション -->
+            <section class="settings-section github-feature">
+                <h2>GitHub統合設定</h2>
+                
+                <div class="setting-group">
+                    <h3>Personal Access Token</h3>
+                    <p class="setting-description">
+                        GitHubリポジトリのCI結果を取得するために、Personal Access Tokenを設定してください。
+                        トークンは暗号化してブラウザに保存されます。
+                    </p>
+                    
+                    <div class="token-input-group">
+                        <input type="password" 
+                               id="github-token" 
+                               class="form-input" 
+                               placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                               aria-label="GitHub Personal Access Token">
+                        <button id="test-connection-btn" class="btn btn-secondary" disabled>
+                            接続テスト
+                        </button>
+                        <button id="save-token-btn" class="btn btn-primary" disabled>
+                            保存
+                        </button>
+                        <button id="delete-token-btn" class="btn btn-danger" style="display: none;">
+                            削除
+                        </button>
+                    </div>
+                    
+                    <div id="connection-status" class="connection-status" style="display: none;">
+                        <!-- 接続テスト結果がここに表示される -->
+                    </div>
+                    
+                    <div class="token-info">
+                        <h4>必要な権限</h4>
+                        <ul>
+                            <li><code>repo</code> - プライベートリポジトリのアクセス（必要に応じて）</li>
+                            <li><code>actions:read</code> - GitHub Actionsの実行結果読み取り</li>
+                        </ul>
+                        <p>
+                            <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">
+                                GitHub Personal Access Tokenを作成 ↗
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 自動同期設定セクション -->
+            <section class="settings-section">
+                <h2>自動同期設定</h2>
+                
+                <div class="setting-group">
+                    <div class="setting-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="auto-sync-enabled" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-text">自動同期を有効にする</span>
+                        </label>
+                    </div>
+                    
+                    <div id="sync-interval-group" class="setting-group" style="display: none;">
+                        <label for="sync-interval" class="form-label">同期間隔</label>
+                        <select id="sync-interval" class="form-select">
+                            <option value="5">5分</option>
+                            <option value="15" selected>15分</option>
+                            <option value="30">30分</option>
+                            <option value="60">1時間</option>
+                        </select>
+                    </div>
+                    
+                    <div id="sync-status" class="sync-status">
+                        <h4>現在の同期状態</h4>
+                        <div id="sync-status-content">
+                            <p>自動同期は無効です</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API使用状況セクション -->
+            <section class="settings-section">
+                <h2>API使用状況</h2>
+                
+                <div class="setting-group">
+                    <!-- レート制限状態表示 -->
+                    <div id="rate-limit-info" class="rate-limit-status ok">
+                        <div class="rate-limit-ok">
+                            <i class="icon-check">✓</i>
+                            <span>API利用可能</span>
+                        </div>
+                    </div>
+                    
+                    <!-- API使用状況詳細表示 -->
+                    <div id="api-usage-info" class="api-usage-display">
+                        <div class="usage-bar">
+                            <div class="usage-fill low" style="width: 0%"></div>
+                        </div>
+                        <div class="usage-details">
+                            <span>使用済み: <span id="rate-limit-used">-</span>/<span id="rate-limit-limit">-</span> リクエスト (<span id="rate-limit-percentage">0</span>%)</span>
+                            <span>残り: <span id="rate-limit-remaining">-</span> リクエスト</span>
+                            <span>リセット: <span id="rate-limit-reset">-</span></span>
+                            <span>認証状態: <span id="auth-status">未認証</span></span>
+                        </div>
+                    </div>
+                    
+                    <button id="refresh-rate-limit-btn" class="btn btn-secondary">
+                        使用状況を更新
+                    </button>
+                </div>
+            </section>
+
+            <!-- 同期履歴セクション -->
+            <section class="settings-section">
+                <h2>同期履歴</h2>
+                
+                <div class="setting-group">
+                    <div class="sync-history-controls">
+                        <button id="refresh-history-btn" class="btn btn-secondary">
+                            履歴を更新
+                        </button>
+                        <button id="clear-history-btn" class="btn btn-danger">
+                            履歴をクリア
+                        </button>
+                    </div>
+                    
+                    <div id="sync-history-container" class="sync-history-container">
+                        <div class="sync-history-empty">
+                            <p>同期履歴がありません</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 確認ダイアログ -->
+    <div id="confirm-dialog" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirm-dialog-title">確認</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-dialog-message"></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="confirm-dialog-cancel">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="confirm-dialog-confirm">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- エラー・成功メッセージ表示エリア -->
+    <div id="message-container"></div>
+
+    <!-- Octokit.js CDN -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="github-error-handler.js"></script>
+    <script src="ci-service-plugin.js"></script>
+    <script src="ci-service-settings-manager.js"></script>
+    <script src="settings.js"></script>
+    <script src="github-ui-controller.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

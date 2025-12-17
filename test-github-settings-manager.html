@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHubSettingsManager テスト</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .test-result.pass {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .test-result.fail {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .test-result.info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>GitHubSettingsManager テスト</h1>
+
+    <div class="controls">
+        <button onclick="runAllTests()">すべてのテストを実行</button>
+        <button onclick="clearAllData()" class="danger">すべてのデータをクリア</button>
+    </div>
+
+    <div class="test-section">
+        <h2>1. 基本設定のテスト</h2>
+        <div id="test-basic-settings"></div>
+        <button onclick="testBasicSettings()">実行</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Personal Access Token管理のテスト</h2>
+        <div id="test-token-management"></div>
+        <button onclick="testTokenManagement()">実行</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 自動同期設定のテスト</h2>
+        <div id="test-auto-sync"></div>
+        <button onclick="testAutoSync()">実行</button>
+    </div>
+
+    <div class="test-section">
+        <h2>4. 同期履歴管理のテスト</h2>
+        <div id="test-sync-history"></div>
+        <button onclick="testSyncHistory()">実行</button>
+    </div>
+
+    <div class="test-section">
+        <h2>5. 履歴の自動削除（100件制限）のテスト</h2>
+        <div id="test-history-limit"></div>
+        <button onclick="testHistoryLimit()">実行</button>
+    </div>
+
+    <div class="test-section">
+        <h2>6. レート制限情報のテスト</h2>
+        <div id="test-rate-limit"></div>
+        <button onclick="testRateLimit()">実行</button>
+    </div>
+
+    <!-- 依存ファイルの読み込み -->
+    <script src="app.js"></script>
+    <script src="token-encryption.js"></script>
+    <script src="github-settings-manager.js"></script>
+
+    <script>
+        // テスト結果を表示するヘルパー関数
+        function displayResult(elementId, message, isPass) {
+            const element = document.getElementById(elementId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${isPass ? 'pass' : 'fail'}`;
+            resultDiv.textContent = message;
+            element.appendChild(resultDiv);
+        }
+
+        function displayInfo(elementId, message) {
+            const element = document.getElementById(elementId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-result info';
+            resultDiv.textContent = message;
+            element.appendChild(resultDiv);
+        }
+
+        function displayJSON(elementId, data) {
+            const element = document.getElementById(elementId);
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            element.appendChild(pre);
+        }
+
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // 1. 基本設定のテスト
+        function testBasicSettings() {
+            clearResults('test-basic-settings');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // デフォルト設定の取得
+                const defaultSettings = manager.getSettings();
+                displayInfo('test-basic-settings', 'デフォルト設定:');
+                displayJSON('test-basic-settings', defaultSettings);
+
+                // デフォルト値の確認
+                const hasDefaults = 
+                    defaultSettings.autoSyncEnabled === false &&
+                    defaultSettings.autoSyncInterval === 15 &&
+                    defaultSettings.maxRetries === 3 &&
+                    defaultSettings.retryDelay === 2;
+
+                displayResult('test-basic-settings', 
+                    'デフォルト設定の確認: ' + (hasDefaults ? '成功' : '失敗'), 
+                    hasDefaults);
+
+                // 設定の更新
+                const updateSuccess = manager.updateSettings({
+                    autoSyncEnabled: true,
+                    autoSyncInterval: 30
+                });
+
+                displayResult('test-basic-settings', 
+                    '設定の更新: ' + (updateSuccess ? '成功' : '失敗'), 
+                    updateSuccess);
+
+                // 更新後の設定を確認
+                const updatedSettings = manager.getSettings();
+                const isUpdated = 
+                    updatedSettings.autoSyncEnabled === true &&
+                    updatedSettings.autoSyncInterval === 30;
+
+                displayResult('test-basic-settings', 
+                    '更新後の設定確認: ' + (isUpdated ? '成功' : '失敗'), 
+                    isUpdated);
+
+                displayInfo('test-basic-settings', '更新後の設定:');
+                displayJSON('test-basic-settings', updatedSettings);
+
+            } catch (error) {
+                displayResult('test-basic-settings', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // 2. Personal Access Token管理のテスト
+        async function testTokenManagement() {
+            clearResults('test-token-management');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // トークンの設定
+                const testToken = 'ghp_test_token_1234567890abcdef';
+                const setSuccess = await manager.setAccessToken(testToken);
+
+                displayResult('test-token-management', 
+                    'トークンの設定: ' + (setSuccess ? '成功' : '失敗'), 
+                    setSuccess);
+
+                // 暗号化されたトークンの取得
+                const encryptedToken = manager.getAccessToken();
+                const hasEncryptedToken = encryptedToken !== null && encryptedToken !== testToken;
+
+                displayResult('test-token-management', 
+                    'トークンの暗号化確認: ' + (hasEncryptedToken ? '成功（暗号化されている）' : '失敗'), 
+                    hasEncryptedToken);
+
+                // トークンの復号化
+                const decryptedToken = await manager.getDecryptedAccessToken();
+                const isDecrypted = decryptedToken === testToken;
+
+                displayResult('test-token-management', 
+                    'トークンの復号化: ' + (isDecrypted ? '成功' : '失敗'), 
+                    isDecrypted);
+
+                // トークンの削除
+                const clearSuccess = manager.clearAccessToken();
+                displayResult('test-token-management', 
+                    'トークンの削除: ' + (clearSuccess ? '成功' : '失敗'), 
+                    clearSuccess);
+
+                // 削除後の確認
+                const afterClear = manager.getAccessToken();
+                const isCleared = afterClear === null;
+
+                displayResult('test-token-management', 
+                    '削除後の確認: ' + (isCleared ? '成功（トークンが削除されている）' : '失敗'), 
+                    isCleared);
+
+            } catch (error) {
+                displayResult('test-token-management', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // 3. 自動同期設定のテスト
+        function testAutoSync() {
+            clearResults('test-auto-sync');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // 自動同期の有効化
+                const enableSuccess = manager.setAutoSyncEnabled(true);
+                displayResult('test-auto-sync', 
+                    '自動同期の有効化: ' + (enableSuccess ? '成功' : '失敗'), 
+                    enableSuccess);
+
+                // 同期間隔の設定
+                const intervalSuccess = manager.setAutoSyncInterval(60);
+                displayResult('test-auto-sync', 
+                    '同期間隔の設定: ' + (intervalSuccess ? '成功' : '失敗'), 
+                    intervalSuccess);
+
+                // 設定の確認
+                const settings = manager.getSettings();
+                const isConfigured = 
+                    settings.autoSyncEnabled === true &&
+                    settings.autoSyncInterval === 60;
+
+                displayResult('test-auto-sync', 
+                    '設定の確認: ' + (isConfigured ? '成功' : '失敗'), 
+                    isConfigured);
+
+                displayInfo('test-auto-sync', '現在の設定:');
+                displayJSON('test-auto-sync', settings);
+
+            } catch (error) {
+                displayResult('test-auto-sync', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // 4. 同期履歴管理のテスト
+        function testSyncHistory() {
+            clearResults('test-sync-history');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // 履歴をクリア
+                manager.clearSyncHistory();
+
+                // テスト用の同期記録を作成
+                const record1 = {
+                    id: generateUUID(),
+                    timestamp: new Date().toISOString(),
+                    projectId: 'project-1',
+                    projectName: 'テストプロジェクト1',
+                    status: 'success',
+                    newCIResults: 5,
+                    updatedCIResults: 0,
+                    errors: [],
+                    repositoryUrl: 'https://github.com/test/repo1',
+                    workflowRunsProcessed: 5,
+                    apiRequestsUsed: 10,
+                    durationMs: 1500
+                };
+
+                const record2 = {
+                    id: generateUUID(),
+                    timestamp: new Date(Date.now() - 60000).toISOString(), // 1分前
+                    projectId: 'project-2',
+                    projectName: 'テストプロジェクト2',
+                    status: 'failure',
+                    newCIResults: 0,
+                    updatedCIResults: 0,
+                    errors: ['API接続エラー'],
+                    repositoryUrl: 'https://github.com/test/repo2',
+                    workflowRunsProcessed: 0,
+                    apiRequestsUsed: 1,
+                    durationMs: 500
+                };
+
+                // 記録を追加
+                const add1Success = manager.addSyncRecord(record1);
+                const add2Success = manager.addSyncRecord(record2);
+
+                displayResult('test-sync-history', 
+                    '同期記録の追加: ' + (add1Success && add2Success ? '成功' : '失敗'), 
+                    add1Success && add2Success);
+
+                // 履歴を取得
+                const history = manager.getSyncHistory();
+                displayResult('test-sync-history', 
+                    '履歴の取得: ' + (history.length === 2 ? '成功' : '失敗'), 
+                    history.length === 2);
+
+                displayInfo('test-sync-history', '同期履歴:');
+                displayJSON('test-sync-history', history);
+
+                // プロジェクト別の履歴取得
+                const project1History = manager.getSyncHistoryByProject('project-1');
+                displayResult('test-sync-history', 
+                    'プロジェクト別履歴: ' + (project1History.length === 1 ? '成功' : '失敗'), 
+                    project1History.length === 1);
+
+                // 最新の記録取得
+                const latest = manager.getLatestSyncRecord();
+                displayResult('test-sync-history', 
+                    '最新記録の取得: ' + (latest && latest.projectId === 'project-1' ? '成功' : '失敗'), 
+                    latest && latest.projectId === 'project-1');
+
+                // 失敗した記録の取得
+                const failed = manager.getFailedSyncRecords();
+                displayResult('test-sync-history', 
+                    '失敗記録の取得: ' + (failed.length === 1 && failed[0].status === 'failure' ? '成功' : '失敗'), 
+                    failed.length === 1 && failed[0].status === 'failure');
+
+            } catch (error) {
+                displayResult('test-sync-history', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // 5. 履歴の自動削除（100件制限）のテスト
+        function testHistoryLimit() {
+            clearResults('test-history-limit');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // 履歴をクリア
+                manager.clearSyncHistory();
+
+                displayInfo('test-history-limit', '105件の同期記録を追加中...');
+
+                // 105件の記録を追加
+                for (let i = 0; i < 105; i++) {
+                    const record = {
+                        id: generateUUID(),
+                        timestamp: new Date(Date.now() - i * 1000).toISOString(),
+                        projectId: `project-${i}`,
+                        projectName: `テストプロジェクト${i}`,
+                        status: 'success',
+                        newCIResults: i,
+                        updatedCIResults: 0,
+                        errors: [],
+                        repositoryUrl: `https://github.com/test/repo${i}`,
+                        workflowRunsProcessed: i,
+                        apiRequestsUsed: i * 2,
+                        durationMs: 1000 + i
+                    };
+                    manager.addSyncRecord(record);
+                }
+
+                // 履歴を取得
+                const history = manager.getSyncHistory();
+                const isLimited = history.length === 100;
+
+                displayResult('test-history-limit', 
+                    '履歴の自動削除: ' + (isLimited ? '成功（100件に制限されている）' : '失敗'), 
+                    isLimited);
+
+                displayInfo('test-history-limit', `現在の履歴件数: ${history.length}件`);
+
+                // 最新の記録が保持されていることを確認
+                const latestIsCorrect = history[0].projectId === 'project-0';
+                displayResult('test-history-limit', 
+                    '最新記録の保持: ' + (latestIsCorrect ? '成功' : '失敗'), 
+                    latestIsCorrect);
+
+                // 最も古い記録が削除されていることを確認
+                const oldestExists = history.some(r => r.projectId === 'project-104');
+                displayResult('test-history-limit', 
+                    '古い記録の削除: ' + (!oldestExists ? '成功（削除されている）' : '失敗'), 
+                    !oldestExists);
+
+            } catch (error) {
+                displayResult('test-history-limit', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // 6. レート制限情報のテスト
+        function testRateLimit() {
+            clearResults('test-rate-limit');
+            const manager = new GitHubSettingsManager();
+
+            try {
+                // レート制限情報の更新
+                const resetTime = new Date(Date.now() + 3600000).toISOString(); // 1時間後
+                const updateSuccess = manager.updateRateLimitInfo(4500, resetTime);
+
+                displayResult('test-rate-limit', 
+                    'レート制限情報の更新: ' + (updateSuccess ? '成功' : '失敗'), 
+                    updateSuccess);
+
+                // 設定の確認
+                const settings = manager.getSettings();
+                const isUpdated = 
+                    settings.rateLimitRemaining === 4500 &&
+                    settings.rateLimitResetAt === resetTime;
+
+                displayResult('test-rate-limit', 
+                    'レート制限情報の確認: ' + (isUpdated ? '成功' : '失敗'), 
+                    isUpdated);
+
+                displayInfo('test-rate-limit', 'レート制限情報:');
+                displayJSON('test-rate-limit', {
+                    remaining: settings.rateLimitRemaining,
+                    resetAt: settings.rateLimitResetAt
+                });
+
+                // 最終同期日時の更新
+                const syncSuccess = manager.updateLastSyncAt();
+                displayResult('test-rate-limit', 
+                    '最終同期日時の更新: ' + (syncSuccess ? '成功' : '失敗'), 
+                    syncSuccess);
+
+                const updatedSettings = manager.getSettings();
+                const hasSyncTime = updatedSettings.lastSyncAt !== undefined;
+
+                displayResult('test-rate-limit', 
+                    '最終同期日時の確認: ' + (hasSyncTime ? '成功' : '失敗'), 
+                    hasSyncTime);
+
+            } catch (error) {
+                displayResult('test-rate-limit', 'エラー: ' + error.message, false);
+            }
+        }
+
+        // すべてのテストを実行
+        async function runAllTests() {
+            testBasicSettings();
+            await testTokenManagement();
+            testAutoSync();
+            testSyncHistory();
+            testHistoryLimit();
+            testRateLimit();
+        }
+
+        // すべてのデータをクリア
+        function clearAllData() {
+            if (confirm('すべてのGitHub統合データ（設定と履歴）をクリアしますか？')) {
+                const manager = new GitHubSettingsManager();
+                const success = manager.clearAll();
+                alert(success ? 'データをクリアしました' : 'データのクリアに失敗しました');
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

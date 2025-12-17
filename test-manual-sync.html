@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手動同期機能テスト</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--neutral-300);
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--primary-700);
+        }
+        .test-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .test-output {
+            background-color: var(--neutral-100);
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-output pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>手動同期機能テスト</h1>
+    
+    <!-- 同期ステータスインジケーター -->
+    <div id="sync-status-indicator" class="sync-status-indicator" style="display: none;"></div>
+    
+    <!-- テストセクション1: 基本的な同期 -->
+    <div class="test-section">
+        <h2>1. 基本的な同期テスト</h2>
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="testBasicSync()">同期実行</button>
+            <button class="btn btn-secondary" onclick="clearOutput('output1')">クリア</button>
+        </div>
+        <div class="test-output" id="output1">
+            <pre>テスト結果がここに表示されます...</pre>
+        </div>
+    </div>
+    
+    <!-- テストセクション2: エラーハンドリング -->
+    <div class="test-section">
+        <h2>2. エラーハンドリングテスト</h2>
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="testNetworkError()">ネットワークエラー</button>
+            <button class="btn btn-primary" onclick="testAuthError()">認証エラー</button>
+            <button class="btn btn-primary" onclick="testRateLimitError()">レート制限エラー</button>
+            <button class="btn btn-primary" onclick="testNotFoundError()">404エラー</button>
+            <button class="btn btn-secondary" onclick="clearOutput('output2')">クリア</button>
+        </div>
+        <div class="test-output" id="output2">
+            <pre>テスト結果がここに表示されます...</pre>
+        </div>
+    </div>
+    
+    <!-- テストセクション3: 部分的成功 -->
+    <div class="test-section">
+        <h2>3. 部分的成功テスト</h2>
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="testPartialSuccess()">部分的成功</button>
+            <button class="btn btn-secondary" onclick="clearOutput('output3')">クリア</button>
+        </div>
+        <div class="test-output" id="output3">
+            <pre>テスト結果がここに表示されます...</pre>
+        </div>
+    </div>
+    
+    <!-- テストセクション4: 進行状況表示 -->
+    <div class="test-section">
+        <h2>4. 進行状況表示テスト</h2>
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="testProgressDisplay()">進行状況表示</button>
+            <button class="btn btn-secondary" onclick="clearOutput('output4')">クリア</button>
+        </div>
+        <div class="test-output" id="output4">
+            <pre>テスト結果がここに表示されます...</pre>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        // テスト用のヘルパー関数
+        function log(outputId, message) {
+            const output = document.getElementById(outputId);
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            output.querySelector('pre').textContent += `\n[${timestamp}] ${message}`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput(outputId) {
+            const output = document.getElementById(outputId);
+            output.querySelector('pre').textContent = 'テスト結果がここに表示されます...';
+        }
+        
+        // テスト1: 基本的な同期
+        function testBasicSync() {
+            log('output1', '基本的な同期テストを開始...');
+            
+            // 同期中の表示をテスト
+            showSyncStatusIndicator('syncing', 'GitHub ActionsのCI結果を取得中...');
+            log('output1', '同期中の表示: OK');
+            
+            // 2秒後に成功表示
+            setTimeout(() => {
+                showSyncStatusIndicator('success', '5件の新しいCI結果を取得しました（12回のAPI呼び出し）');
+                log('output1', '成功表示: OK');
+            }, 2000);
+        }
+        
+        // テスト2: ネットワークエラー
+        function testNetworkError() {
+            log('output2', 'ネットワークエラーテストを開始...');
+            
+            const errorData = {
+                error: 'ネットワーク接続エラーが発生しました',
+                success: false,
+                newCIResults: 0
+            };
+            
+            handleSyncError(errorData, 'test-project-id', 0, 2);
+            log('output2', 'ネットワークエラー表示: OK');
+        }
+        
+        // テスト3: 認証エラー
+        function testAuthError() {
+            log('output2', '認証エラーテストを開始...');
+            
+            const errorData = {
+                error: 'GitHub認証が無効です。Personal Access Tokenを確認してください。',
+                success: false,
+                newCIResults: 0
+            };
+            
+            handleSyncError(errorData, 'test-project-id', 0, 2);
+            log('output2', '認証エラー表示: OK');
+        }
+        
+        // テスト4: レート制限エラー
+        function testRateLimitError() {
+            log('output2', 'レート制限エラーテストを開始...');
+            
+            const errorData = {
+                error: 'GitHub APIのレート制限に達しました。しばらく待ってから再試行してください。',
+                success: false,
+                newCIResults: 0
+            };
+            
+            handleSyncError(errorData, 'test-project-id', 0, 2);
+            log('output2', 'レート制限エラー表示: OK');
+        }
+        
+        // テスト5: 404エラー
+        function testNotFoundError() {
+            log('output2', '404エラーテストを開始...');
+            
+            const errorData = {
+                error: '指定されたリポジトリが見つかりません。URLを確認してください。',
+                success: false,
+                newCIResults: 0
+            };
+            
+            handleSyncError(errorData, 'test-project-id', 0, 2);
+            log('output2', '404エラー表示: OK');
+        }
+        
+        // テスト6: 部分的成功
+        function testPartialSuccess() {
+            log('output3', '部分的成功テストを開始...');
+            
+            const errorData = {
+                error: '2件のワークフローでメトリクス抽出に失敗しました',
+                success: false,
+                partialSuccess: true,
+                newCIResults: 3,
+                errorCount: 2
+            };
+            
+            handleSyncError(errorData, 'test-project-id', 0, 2);
+            log('output3', '部分的成功表示: OK');
+        }
+        
+        // テスト7: 進行状況表示
+        function testProgressDisplay() {
+            log('output4', '進行状況表示テストを開始...');
+            
+            // ステップ1: ワークフロー取得中
+            showSyncStatusIndicator('syncing', 'ワークフロー実行を取得中...', { processed: 0, total: 10 });
+            log('output4', 'ステップ1: ワークフロー取得中');
+            
+            // ステップ2: ジョブ処理中
+            setTimeout(() => {
+                showSyncStatusIndicator('syncing', 'ジョブ詳細を処理中...', { processed: 5, total: 10 });
+                log('output4', 'ステップ2: ジョブ処理中 (5/10)');
+            }, 1000);
+            
+            // ステップ3: メトリクス抽出中
+            setTimeout(() => {
+                showSyncStatusIndicator('syncing', 'メトリクスを抽出中...', { processed: 8, total: 10 });
+                log('output4', 'ステップ3: メトリクス抽出中 (8/10)');
+            }, 2000);
+            
+            // ステップ4: 完了
+            setTimeout(() => {
+                showSyncStatusIndicator('success', '同期が完了しました', { count: 10 });
+                log('output4', 'ステップ4: 完了 (10件)');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

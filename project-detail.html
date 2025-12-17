@@ -23,6 +23,10 @@
                 <button id="theme-toggle" class="theme-toggle" aria-label="テーマ切り替え" title="ダークモード切り替え">
                     🌙
                 </button>
+                <a href="settings.html" class="btn btn-secondary">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
                 <a href="index.html" class="nav-link">
                     <span class="nav-icon">←</span>
                     一覧に戻る
@@ -37,6 +41,10 @@
                     <span class="nav-icon">🌙</span>
                     <span class="nav-text">ダークモード切り替え</span>
                 </button>
+                <a href="settings.html" class="mobile-nav-item btn-mobile btn-secondary-mobile">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">設定</span>
+                </a>
                 <a href="index.html" class="mobile-nav-item nav-link-mobile">
                     <span class="nav-icon">←</span>
                     <span class="nav-text">一覧に戻る</span>
@@ -71,6 +79,15 @@
         <section id="project-info-section">
             <div class="project-header">
                 <h2 id="project-title">プロジェクト詳細</h2>
+                <div class="project-status">
+                    <div class="network-status">
+                        <span class="status-label">ネットワーク:</span>
+                        <span class="network-status-indicator" id="project-network-status">確認中...</span>
+                    </div>
+                    <div class="manual-mode-indicator" id="project-manual-mode">
+                        手動入力モード (オフライン)
+                    </div>
+                </div>
                 <div class="project-actions">
                     <button id="edit-project-btn" class="btn btn-primary">編集</button>
                     <button id="delete-project-btn" class="btn btn-danger">削除</button>
@@ -103,8 +120,26 @@
             <div id="ci-results-tab" class="tab-content active">
                 <div class="tab-header">
                     <h3>CI結果</h3>
-                    <button id="add-ci-result-btn" class="btn btn-primary">CI結果追加</button>
+                    <div class="tab-header-actions">
+                        <button id="manual-sync-btn" class="btn btn-secondary" style="display: none;">
+                            <span class="sync-icon">🔄</span>
+                            GitHub同期
+                        </button>
+                        <button id="add-ci-result-btn" class="btn btn-primary">CI結果追加</button>
+                    </div>
                 </div>
+                <div id="sync-status-indicator" class="sync-status-indicator" style="display: none;">
+                    <!-- 同期状態がここに表示される -->
+                </div>
+                
+                <!-- ワークフローフィルター -->
+                <div id="workflow-filter-container" class="workflow-filter-container" style="display: none;">
+                    <label for="workflow-filter-select" class="workflow-filter-label">ワークフローでフィルター:</label>
+                    <select id="workflow-filter-select" class="workflow-filter-select">
+                        <option value="">すべてのワークフロー</option>
+                    </select>
+                </div>
+                
                 <div id="ci-results-container">
                     <!-- CI結果がここに動的に挿入される -->
                 </div>
@@ -194,6 +229,24 @@
                     <label for="edit-project-assignee">担当者</label>
                     <input type="text" id="edit-project-assignee" name="assignee">
                 </div>
+                
+                <!-- GitHubリポジトリ関連付け -->
+                <fieldset class="form-group">
+                    <legend>GitHubリポジトリ</legend>
+                    <div class="form-group">
+                        <label for="edit-github-repo-url">リポジトリURL</label>
+                        <input type="url" id="edit-github-repo-url" name="githubRepoUrl" 
+                               placeholder="https://github.com/owner/repo">
+                        <small class="form-help">GitHub ActionsのCI結果を自動取得するには、リポジトリURLを入力してください</small>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="edit-github-sync-enabled" name="githubSyncEnabled">
+                            自動同期を有効にする
+                        </label>
+                    </div>
+                </fieldset>
+                
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-edit-project">キャンセル</button>
                     <button type="submit" class="btn btn-primary">更新</button>
@@ -760,6 +813,18 @@
     <!-- エラー・成功メッセージ表示エリア -->
     <div id="message-container"></div>
 
+    <!-- Octokit.js CDN -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="github-error-handler.js"></script>
+    <script src="ci-service-plugin.js"></script>
+    <script src="ci-service-settings-manager.js"></script>
+    <script src="settings.js"></script>
+    <script src="github-ui-controller.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

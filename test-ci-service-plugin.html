@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CDサービスプラグイン基盤テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .test-result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .test-result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .test-result.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .service-list {
+            list-style: none;
+            padding: 0;
+        }
+        .service-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>CI/CDサービスプラグイン基盤テスト</h1>
+
+    <!-- テスト1: プラグインシステムの初期化 -->
+    <div class="test-section">
+        <h2>テスト1: プラグインシステムの初期化</h2>
+        <button onclick="testPluginSystemInitialization()">テスト実行</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <!-- テスト2: サービスレジストリ -->
+    <div class="test-section">
+        <h2>テスト2: サービスレジストリ</h2>
+        <button onclick="testServiceRegistry()">テスト実行</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <!-- テスト3: GitHubサービスプラグイン -->
+    <div class="test-section">
+        <h2>テスト3: GitHubサービスプラグイン</h2>
+        <button onclick="testGitHubServicePlugin()">テスト実行</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <!-- テスト4: 設定管理 -->
+    <div class="test-section">
+        <h2>テスト4: 設定管理</h2>
+        <button onclick="testSettingsManager()">テスト実行</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <!-- テスト5: CI結果統合 -->
+    <div class="test-section">
+        <h2>テスト5: CI結果統合</h2>
+        <button onclick="testCIResultsAggregator()">テスト実行</button>
+        <div id="test5-result"></div>
+    </div>
+
+    <!-- テスト6: サービス選択UI -->
+    <div class="test-section">
+        <h2>テスト6: サービス選択UI</h2>
+        <button onclick="testServiceSelectorUI()">テスト実行</button>
+        <div id="test6-result"></div>
+        <div id="test6-ui-container"></div>
+    </div>
+
+    <!-- すべてのテストを実行 -->
+    <div class="test-section">
+        <h2>すべてのテストを実行</h2>
+        <button onclick="runAllTests()">すべてのテストを実行</button>
+    </div>
+
+    <!-- 必要なスクリプトを読み込み -->
+    <script src="https://cdn.skypack.dev/octokit"></script>
+    <script src="token-encryption.js"></script>
+    <script src="metrics-extractor.js"></script>
+    <script src="error-recovery.js"></script>
+    <script src="network-monitor.js"></script>
+    <script src="github-integration.js"></script>
+    <script src="ci-service-plugin.js"></script>
+    <script src="ci-service-settings-manager.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // テストユーティリティ関数
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        function showError(elementId, error) {
+            showResult(elementId, `エラー: ${error.message}`, 'error');
+            console.error(error);
+        }
+
+        // テスト1: プラグインシステムの初期化
+        function testPluginSystemInitialization() {
+            try {
+                // 必要なクラスが定義されているかチェック
+                const checks = [
+                    { name: 'CIServicePlugin', exists: typeof CIServicePlugin !== 'undefined' },
+                    { name: 'GitHubServicePlugin', exists: typeof GitHubServicePlugin !== 'undefined' },
+                    { name: 'CIServiceRegistry', exists: typeof CIServiceRegistry !== 'undefined' },
+                    { name: 'CIServiceSettingsManager', exists: typeof CIServiceSettingsManager !== 'undefined' },
+                    { name: 'CIResultsAggregator', exists: typeof CIResultsAggregator !== 'undefined' }
+                ];
+
+                const allPassed = checks.every(check => check.exists);
+                
+                let message = '<strong>クラス定義チェック:</strong><ul>';
+                checks.forEach(check => {
+                    message += `<li>${check.name}: ${check.exists ? '✓ 定義済み' : '✗ 未定義'}</li>`;
+                });
+                message += '</ul>';
+
+                // グローバルインスタンスのチェック
+                message += '<strong>グローバルインスタンスチェック:</strong><ul>';
+                message += `<li>ciServiceRegistry: ${typeof ciServiceRegistry !== 'undefined' ? '✓ 利用可能' : '✗ 利用不可'}</li>`;
+                message += `<li>ciServiceSettingsManager: ${typeof ciServiceSettingsManager !== 'undefined' ? '✓ 利用可能' : '✗ 利用不可'}</li>`;
+                message += `<li>ciResultsAggregator: ${typeof ciResultsAggregator !== 'undefined' ? '✓ 利用可能' : '✗ 利用不可'}</li>`;
+                message += '</ul>';
+
+                showResult('test1-result', message, allPassed ? 'success' : 'error');
+            } catch (error) {
+                showError('test1-result', error);
+            }
+        }
+
+        // テスト2: サービスレジストリ
+        function testServiceRegistry() {
+            try {
+                const registry = CIServiceRegistry.getInstance();
+                
+                let message = '<strong>サービスレジストリテスト:</strong><ul>';
+                
+                // 登録されているサービスを取得
+                const services = registry.getAllServices();
+                message += `<li>登録サービス数: ${services.length}</li>`;
+                
+                // 各サービスの情報を表示
+                message += '<li>登録サービス:<ul class="service-list">';
+                services.forEach(service => {
+                    message += `<li>${service.getDisplayName()} (${service.getName()})</li>`;
+                });
+                message += '</ul></li>';
+                
+                // アクティブなサービスを取得
+                const activeService = registry.getActiveService();
+                message += `<li>アクティブサービス: ${activeService ? activeService.getDisplayName() : 'なし'}</li>`;
+                
+                // GitHubサービスが登録されているかチェック
+                const hasGitHub = registry.hasService('github');
+                message += `<li>GitHubサービス登録: ${hasGitHub ? '✓ はい' : '✗ いいえ'}</li>`;
+                
+                message += '</ul>';
+                
+                showResult('test2-result', message, services.length > 0 ? 'success' : 'error');
+            } catch (error) {
+                showError('test2-result', error);
+            }
+        }
+
+        // テスト3: GitHubサービスプラグイン
+        function testGitHubServicePlugin() {
+            try {
+                const registry = CIServiceRegistry.getInstance();
+                const githubService = registry.getService('github');
+                
+                if (!githubService) {
+                    showResult('test3-result', 'GitHubサービスが見つかりません', 'error');
+                    return;
+                }
+                
+                let message = '<strong>GitHubサービスプラグインテスト:</strong><ul>';
+                message += `<li>サービス名: ${githubService.getName()}</li>`;
+                message += `<li>表示名: ${githubService.getDisplayName()}</li>`;
+                message += `<li>認証状態: ${githubService.isAuthenticatedStatus() ? '認証済み' : '未認証'}</li>`;
+                
+                // メソッドの存在チェック
+                const methods = [
+                    'setCredentials',
+                    'clearCredentials',
+                    'testConnection',
+                    'validateRepository',
+                    'fetchCIResults',
+                    'parseRepositoryUrl',
+                    'getRepositoryUrlPlaceholder',
+                    'getRepositoryUrlHelpText',
+                    'createAuthenticationUI',
+                    'createServiceSettingsUI',
+                    'getRateLimitInfo',
+                    'handleServiceError'
+                ];
+                
+                message += '<li>実装メソッド:<ul>';
+                methods.forEach(method => {
+                    const exists = typeof githubService[method] === 'function';
+                    message += `<li>${method}: ${exists ? '✓' : '✗'}</li>`;
+                });
+                message += '</ul></li>';
+                
+                // URL解析テスト
+                const testUrl = 'https://github.com/owner/repo';
+                const parsed = githubService.parseRepositoryUrl(testUrl);
+                message += `<li>URL解析テスト: ${parsed ? `✓ owner=${parsed.owner}, repo=${parsed.repo}` : '✗ 失敗'}</li>`;
+                
+                message += '</ul>';
+                
+                showResult('test3-result', message, 'success');
+            } catch (error) {
+                showError('test3-result', error);
+            }
+        }
+
+        // テスト4: 設定管理
+        function testSettingsManager() {
+            try {
+                const settingsManager = CIServiceSettingsManager.getInstance();
+                
+                let message = '<strong>設定管理テスト:</strong><ul>';
+                
+                // アクティブサービスを取得
+                const activeService = settingsManager.getActiveService();
+                message += `<li>アクティブサービス: ${activeService}</li>`;
+                
+                // GitHubサービスの設定を取得
+                const githubSettings = settingsManager.getServiceSettings('github');
+                message += '<li>GitHub設定:<ul>';
+                message += `<li>有効: ${githubSettings.enabled ? 'はい' : 'いいえ'}</li>`;
+                message += `<li>自動同期: ${githubSettings.autoSyncEnabled ? '有効' : '無効'}</li>`;
+                message += `<li>同期間隔: ${githubSettings.autoSyncInterval}分</li>`;
+                message += `<li>最終同期: ${githubSettings.lastSyncAt || '未実行'}</li>`;
+                message += '</ul></li>';
+                
+                // 有効なサービス一覧
+                const enabledServices = settingsManager.getEnabledServices();
+                message += `<li>有効なサービス: ${enabledServices.join(', ') || 'なし'}</li>`;
+                
+                // 設定のエクスポート/インポート機能テスト
+                const exportedSettings = settingsManager.exportSettings();
+                message += `<li>設定エクスポート: ${exportedSettings ? '✓ 成功' : '✗ 失敗'}</li>`;
+                
+                message += '</ul>';
+                
+                showResult('test4-result', message, 'success');
+            } catch (error) {
+                showError('test4-result', error);
+            }
+        }
+
+        // テスト5: CI結果統合
+        function testCIResultsAggregator() {
+            try {
+                const aggregator = CIResultsAggregator.getInstance();
+                
+                let message = '<strong>CI結果統合テスト:</strong><ul>';
+                
+                // メソッドの存在チェック
+                const methods = [
+                    'getAllCIResults',
+                    'getCIResultsByService',
+                    'getCIResultsForService',
+                    'syncAllServices',
+                    'getCIResultsStatistics',
+                    'createAggregatedResultsUI',
+                    'createServiceFilterUI'
+                ];
+                
+                message += '<li>実装メソッド:<ul>';
+                methods.forEach(method => {
+                    const exists = typeof aggregator[method] === 'function';
+                    message += `<li>${method}: ${exists ? '✓' : '✗'}</li>`;
+                });
+                message += '</ul></li>';
+                
+                message += '<li>注: 実際のCI結果データがないため、機能テストはスキップされます</li>';
+                
+                message += '</ul>';
+                
+                showResult('test5-result', message, 'success');
+            } catch (error) {
+                showError('test5-result', error);
+            }
+        }
+
+        // テスト6: サービス選択UI
+        function testServiceSelectorUI() {
+            try {
+                const registry = CIServiceRegistry.getInstance();
+                const container = document.getElementById('test6-ui-container');
+                
+                // UIを生成
+                const selectorUI = registry.createServiceSelectorUI();
+                container.innerHTML = '';
+                container.appendChild(selectorUI);
+                
+                let message = '<strong>サービス選択UIテスト:</strong><ul>';
+                message += '<li>✓ UIが正常に生成されました</li>';
+                message += '<li>下記のUIで実際にサービスを選択してみてください</li>';
+                message += '</ul>';
+                
+                showResult('test6-result', message, 'success');
+            } catch (error) {
+                showError('test6-result', error);
+            }
+        }
+
+        // すべてのテストを実行
+        function runAllTests() {
+            testPluginSystemInitialization();
+            setTimeout(() => testServiceRegistry(), 100);
+            setTimeout(() => testGitHubServicePlugin(), 200);
+            setTimeout(() => testSettingsManager(), 300);
+            setTimeout(() => testCIResultsAggregator(), 400);
+            setTimeout(() => testServiceSelectorUI(), 500);
+        }
+
+        // ページ読み込み時に自動実行
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('CI/CD Service Plugin Test Page Loaded');
+            // 初期化を待つ
+            setTimeout(() => {
+                console.log('Running initial tests...');
+                runAllTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

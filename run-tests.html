@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub CI統合 - テスト実行ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .test-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .test-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .test-card .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status.pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status.running {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .status.failed {
+            background: #dc3545;
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .summary {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .summary h2 {
+            color: #1976D2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .summary ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .summary li {
+            padding: 8px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .summary li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .instructions h2 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+            color: #856404;
+        }
+
+        .instructions li {
+            padding: 5px 0;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 GitHub CI統合 テスト実行ダッシュボード</h1>
+            <p>すべてのテストを実行して、実装が正しく動作することを確認します</p>
+        </div>
+
+        <div class="content">
+            <div class="instructions">
+                <h2>📋 テスト実行手順</h2>
+                <ol>
+                    <li>ローカルサーバーが起動していることを確認してください（例: <code>python -m http.server 8000</code>）</li>
+                    <li>ブラウザの開発者ツール（F12）を開いてコンソールを確認してください</li>
+                    <li>各テストカードをクリックして個別にテストを実行するか、「すべてのテストを実行」ボタンをクリックしてください</li>
+                    <li>各テストページで結果を確認し、すべてが成功することを確認してください</li>
+                </ol>
+            </div>
+
+            <div class="summary">
+                <h2>📊 テスト概要</h2>
+                <ul>
+                    <li>コア機能テスト: トークン暗号化、設定管理、統合テスト</li>
+                    <li>エラー処理テスト: エラー回復、ネットワーク監視、GitHubエラーハンドリング</li>
+                    <li>同期機能テスト: 自動同期、手動同期、同期履歴</li>
+                    <li>レート制限管理テスト: レート制限の監視と調整</li>
+                    <li>プラグイン基盤テスト: CI/CDサービスプラグイン</li>
+                </ul>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="openAllTests()">すべてのテストを実行</button>
+                <button class="btn btn-success" onclick="openTestSummary()">テスト実行サマリーを表示</button>
+                <button class="btn btn-secondary" onclick="clearLocalStorage()">LocalStorageをクリア</button>
+            </div>
+
+            <h2 style="margin-bottom: 20px; color: #333;">テスト一覧</h2>
+
+            <div class="test-grid">
+                <!-- コア機能テスト -->
+                <div class="test-card" onclick="openTest('test-token-encryption.html')">
+                    <h3>🔐 トークン暗号化</h3>
+                    <p>Personal Access Tokenの暗号化・復号化機能をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-github-settings-manager.html')">
+                    <h3>⚙️ GitHub設定管理</h3>
+                    <p>GitHub統合設定のCRUD操作と同期履歴管理をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-integration.html')">
+                    <h3>🔗 統合テスト</h3>
+                    <p>すべてのコンポーネントの統合動作を確認します</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <!-- エラー処理テスト -->
+                <div class="test-card" onclick="openTest('test-error-recovery.html')">
+                    <h3>🔄 エラー回復</h3>
+                    <p>指数バックオフ再試行と部分的同期失敗の処理をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-network-monitor.html')">
+                    <h3>📡 ネットワーク監視</h3>
+                    <p>オンライン/オフライン状態の監視と同期再開をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-github-error-handler.html')">
+                    <h3>⚠️ GitHubエラーハンドリング</h3>
+                    <p>GitHub APIエラーとレート制限警告の処理をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <!-- 同期機能テスト -->
+                <div class="test-card" onclick="openTest('test-auto-sync-scheduler.html')">
+                    <h3>⏰ 自動同期スケジューラー</h3>
+                    <p>自動同期の開始・停止・一時停止機能をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-manual-sync.html')">
+                    <h3>🔄 手動同期</h3>
+                    <p>手動同期の実行と進行状況表示をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-sync-history.html')">
+                    <h3>📜 同期履歴</h3>
+                    <p>同期履歴の表示と管理機能をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <div class="test-card" onclick="openTest('test-sync-history-integration.html')">
+                    <h3>🔗 同期履歴統合</h3>
+                    <p>同期履歴の包括的な統合テストを実行します</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <!-- レート制限管理テスト -->
+                <div class="test-card" onclick="openTest('test-rate-limit-handling.html')">
+                    <h3>⏱️ レート制限管理</h3>
+                    <p>レート制限の監視と調整機能をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+
+                <!-- プラグイン基盤テスト -->
+                <div class="test-card" onclick="openTest('test-ci-service-plugin.html')">
+                    <h3>🔌 プラグイン基盤</h3>
+                    <p>CI/CDサービスプラグイン基盤をテストします</p>
+                    <span class="status pending">未実行</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTest(testFile) {
+            window.open(testFile, '_blank');
+        }
+
+        function openAllTests() {
+            const tests = [
+                'test-token-encryption.html',
+                'test-github-settings-manager.html',
+                'test-integration.html',
+                'test-error-recovery.html',
+                'test-network-monitor.html',
+                'test-github-error-handler.html',
+                'test-auto-sync-scheduler.html',
+                'test-manual-sync.html',
+                'test-sync-history.html',
+                'test-sync-history-integration.html',
+                'test-rate-limit-handling.html',
+                'test-ci-service-plugin.html'
+            ];
+
+            if (confirm(`${tests.length}個のテストページを開きます。よろしいですか？\n\n注意: ポップアップブロッカーを無効にしてください。`)) {
+                tests.forEach((test, index) => {
+                    setTimeout(() => {
+                        window.open(test, '_blank');
+                    }, index * 500); // 500msずつ遅延させて開く
+                });
+            }
+        }
+
+        function openTestSummary() {
+            window.open('TEST_EXECUTION_SUMMARY.md', '_blank');
+        }
+
+        function clearLocalStorage() {
+            if (confirm('LocalStorageのすべてのデータをクリアしますか？\n\nこの操作は元に戻せません。')) {
+                localStorage.clear();
+                alert('LocalStorageをクリアしました');
+            }
+        }
+    </script>
+</body>
+</html>

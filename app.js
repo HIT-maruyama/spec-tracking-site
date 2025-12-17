@@ -16,6 +16,18 @@
  * @property {EffectMetrics} [effectMetrics] - 効果メトリクス（オプション）
  * @property {string} createdAt - ISO 8601 timestamp
  * @property {string} updatedAt - ISO 8601 timestamp
+ * @property {GitHubRepository} [githubRepository] - GitHubリポジトリ情報（オプション）
+ */
+
+/**
+ * GitHubリポジトリ情報データモデル
+ * @typedef {Object} GitHubRepository
+ * @property {string} owner - リポジトリオーナー名
+ * @property {string} repo - リポジトリ名
+ * @property {string} url - リポジトリURL
+ * @property {string} [lastSyncAt] - 最終同期日時（ISO 8601 timestamp）
+ * @property {boolean} syncEnabled - 同期有効フラグ
+ * @property {string[]} [targetWorkflows] - 対象ワークフロー名の配列（オプション）
  */
 
 /**
@@ -37,6 +49,102 @@
  * @property {number} [coverage.coveredLines] - カバー済み行数
  * @property {'generated'|'not_generated'|'error'} [sbomStatus] - SBOMステータス
  * @property {string} [logUrl] - 外部CIログへのURL
+ * @property {'manual'|'github'} source - CI結果のソース
+ * @property {GitHubData} [githubData] - GitHub固有のデータ（sourceが'github'の場合）
+ */
+
+/**
+ * GitHub固有のCI結果データ
+ * @typedef {Object} GitHubData
+ * @property {number} runId - ワークフロー実行ID
+ * @property {string} workflowName - ワークフロー名
+ * @property {string} commitSha - コミットSHA
+ * @property {string} branch - ブランチ名
+ * @property {string} actor - 実行者
+ * @property {string} htmlUrl - GitHub上のワークフロー実行ページURL
+ */
+
+/**
+ * GitHub統合設定データモデル
+ * @typedef {Object} GitHubSettings
+ * @property {string} [accessToken] - Personal Access Token（暗号化済み）
+ * @property {boolean} autoSyncEnabled - 自動同期有効フラグ
+ * @property {number} autoSyncInterval - 自動同期間隔（分単位）
+ * @property {string} [lastSyncAt] - 最終同期日時（ISO 8601 timestamp）
+ * @property {number} [rateLimitRemaining] - 残りレート制限数
+ * @property {string} [rateLimitResetAt] - レート制限リセット日時（ISO 8601 timestamp）
+ * @property {number} maxRetries - 最大再試行回数
+ * @property {number} retryDelay - 再試行遅延時間（秒単位）
+ */
+
+/**
+ * 同期記録データモデル
+ * @typedef {Object} SyncRecord
+ * @property {string} id - UUID
+ * @property {string} timestamp - 同期実行日時（ISO 8601 timestamp）
+ * @property {string} projectId - 対象プロジェクトID
+ * @property {string} projectName - プロジェクト名
+ * @property {'success'|'failure'|'partial'} status - 同期ステータス
+ * @property {number} newCIResults - 新規CI結果数
+ * @property {number} updatedCIResults - 更新CI結果数
+ * @property {string[]} errors - エラーメッセージ配列
+ * @property {string} repositoryUrl - リポジトリURL
+ * @property {number} workflowRunsProcessed - 処理したワークフロー実行数
+ * @property {number} apiRequestsUsed - 使用したAPIリクエスト数
+ * @property {number} durationMs - 処理時間（ミリ秒）
+ */
+
+/**
+ * GitHub APIワークフロー実行データモデル
+ * @typedef {Object} WorkflowRun
+ * @property {number} id - ワークフロー実行ID
+ * @property {string} name - ワークフロー名
+ * @property {string} head_branch - ブランチ名
+ * @property {string} head_sha - コミットSHA
+ * @property {'queued'|'in_progress'|'completed'} status - 実行ステータス
+ * @property {'success'|'failure'|'neutral'|'cancelled'|'skipped'|'timed_out'|'action_required'|null} conclusion - 実行結果
+ * @property {number} workflow_id - ワークフローID
+ * @property {string} created_at - 作成日時（ISO 8601 timestamp）
+ * @property {string} updated_at - 更新日時（ISO 8601 timestamp）
+ * @property {string} run_started_at - 実行開始日時（ISO 8601 timestamp）
+ * @property {string} html_url - GitHub上のワークフロー実行ページURL
+ * @property {Object} actor - 実行者情報
+ * @property {string} actor.login - 実行者ログイン名
+ * @property {string} actor.avatar_url - 実行者アバターURL
+ */
+
+/**
+ * GitHub APIジョブデータモデル
+ * @typedef {Object} Job
+ * @property {number} id - ジョブID
+ * @property {number} run_id - ワークフロー実行ID
+ * @property {string} name - ジョブ名
+ * @property {'queued'|'in_progress'|'completed'} status - ジョブステータス
+ * @property {'success'|'failure'|'neutral'|'cancelled'|'skipped'|'timed_out'|'action_required'|null} conclusion - ジョブ結果
+ * @property {string} started_at - 開始日時（ISO 8601 timestamp）
+ * @property {string} completed_at - 完了日時（ISO 8601 timestamp）
+ * @property {JobStep[]} steps - ジョブステップ配列
+ */
+
+/**
+ * GitHub APIジョブステップデータモデル
+ * @typedef {Object} JobStep
+ * @property {string} name - ステップ名
+ * @property {'queued'|'in_progress'|'completed'} status - ステップステータス
+ * @property {'success'|'failure'|'neutral'|'cancelled'|'skipped'|'timed_out'|'action_required'|null} conclusion - ステップ結果
+ * @property {number} number - ステップ番号
+ * @property {string} started_at - 開始日時（ISO 8601 timestamp）
+ * @property {string} completed_at - 完了日時（ISO 8601 timestamp）
+ */
+
+/**
+ * GitHub APIレート制限データモデル
+ * @typedef {Object} RateLimit
+ * @property {number} limit - 制限値
+ * @property {number} remaining - 残り回数
+ * @property {number} reset - リセット時刻（Unix timestamp）
+ * @property {number} used - 使用済み回数
+ * @property {string} resource - リソース種別
  */
 
 /**
@@ -130,7 +238,11 @@ const CLASSIFICATION_SYSTEM = {
     SEVERITY: ['high', 'medium', 'low'],
     STATUS: ['Open', 'InProgress', 'Resolved', 'Verified', 'Deferred', 'Rejected'],
     CI_STATUS: ['pass', 'fail'],
-    SBOM_STATUS: ['generated', 'not_generated', 'error']
+    SBOM_STATUS: ['generated', 'not_generated', 'error'],
+    CI_SOURCE: ['manual', 'github'],
+    SYNC_STATUS: ['success', 'failure', 'partial'],
+    WORKFLOW_STATUS: ['queued', 'in_progress', 'completed'],
+    WORKFLOW_CONCLUSION: ['success', 'failure', 'neutral', 'cancelled', 'skipped', 'timed_out', 'action_required']
 };
 
 // ========================================
@@ -236,6 +348,35 @@ function validateCIResult(ciResult) {
 
     if (ciResult.logUrl && (typeof ciResult.logUrl !== 'string' || ciResult.logUrl.trim() === '')) {
         errors.push({ field: 'logUrl', message: 'ログURLは空文字列にできません' });
+    }
+
+    // 新しいフィールドの検証
+    if (!ciResult.source || !CLASSIFICATION_SYSTEM.CI_SOURCE.includes(ciResult.source)) {
+        errors.push({ field: 'source', message: 'CI結果のソースは必須です（manual または github）' });
+    }
+
+    // GitHub固有データの検証
+    if (ciResult.source === 'github' && ciResult.githubData) {
+        if (!Number.isInteger(ciResult.githubData.runId) || ciResult.githubData.runId <= 0) {
+            errors.push({ field: 'githubData.runId', message: 'ワークフロー実行IDは正の整数である必要があります' });
+        }
+        if (!ciResult.githubData.workflowName || typeof ciResult.githubData.workflowName !== 'string' || ciResult.githubData.workflowName.trim() === '') {
+            errors.push({ field: 'githubData.workflowName', message: 'ワークフロー名は必須です' });
+        }
+        if (!ciResult.githubData.commitSha || typeof ciResult.githubData.commitSha !== 'string' || ciResult.githubData.commitSha.trim() === '') {
+            errors.push({ field: 'githubData.commitSha', message: 'コミットSHAは必須です' });
+        }
+        if (!ciResult.githubData.branch || typeof ciResult.githubData.branch !== 'string' || ciResult.githubData.branch.trim() === '') {
+            errors.push({ field: 'githubData.branch', message: 'ブランチ名は必須です' });
+        }
+        if (!ciResult.githubData.actor || typeof ciResult.githubData.actor !== 'string' || ciResult.githubData.actor.trim() === '') {
+            errors.push({ field: 'githubData.actor', message: '実行者は必須です' });
+        }
+        if (!ciResult.githubData.htmlUrl || typeof ciResult.githubData.htmlUrl !== 'string' || ciResult.githubData.htmlUrl.trim() === '') {
+            errors.push({ field: 'githubData.htmlUrl', message: 'GitHub URLは必須です' });
+        }
+    } else if (ciResult.source === 'github' && !ciResult.githubData) {
+        errors.push({ field: 'githubData', message: 'GitHub由来のCI結果にはGitHub固有データが必要です' });
     }
 
     return {
@@ -406,6 +547,169 @@ function validateEffectMetrics(metrics) {
 }
 
 /**
+ * GitHubリポジトリ情報のバリデーション
+ * @param {Partial<GitHubRepository>} repository - バリデーション対象のGitHubリポジトリ情報
+ * @returns {ValidationResult} バリデーション結果
+ */
+function validateGitHubRepository(repository) {
+    const errors = [];
+
+    // 必須フィールドの検証
+    if (!repository.owner || typeof repository.owner !== 'string' || repository.owner.trim() === '') {
+        errors.push({ field: 'owner', message: 'リポジトリオーナー名は必須です' });
+    }
+
+    if (!repository.repo || typeof repository.repo !== 'string' || repository.repo.trim() === '') {
+        errors.push({ field: 'repo', message: 'リポジトリ名は必須です' });
+    }
+
+    if (!repository.url || typeof repository.url !== 'string' || repository.url.trim() === '') {
+        errors.push({ field: 'url', message: 'リポジトリURLは必須です' });
+    } else {
+        // GitHub URL形式の検証
+        const githubUrlRegex = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/?$/;
+        if (!githubUrlRegex.test(repository.url)) {
+            errors.push({ field: 'url', message: 'リポジトリURLはhttps://github.com/owner/repo形式である必要があります' });
+        }
+    }
+
+    if (typeof repository.syncEnabled !== 'boolean') {
+        errors.push({ field: 'syncEnabled', message: '同期有効フラグはboolean値である必要があります' });
+    }
+
+    // オプションフィールドの検証
+    if (repository.lastSyncAt !== undefined && (typeof repository.lastSyncAt !== 'string' || repository.lastSyncAt.trim() === '')) {
+        errors.push({ field: 'lastSyncAt', message: '最終同期日時は空文字列にできません' });
+    }
+
+    if (repository.targetWorkflows !== undefined) {
+        if (!Array.isArray(repository.targetWorkflows)) {
+            errors.push({ field: 'targetWorkflows', message: '対象ワークフローは配列である必要があります' });
+        } else {
+            repository.targetWorkflows.forEach((workflow, index) => {
+                if (typeof workflow !== 'string' || workflow.trim() === '') {
+                    errors.push({ field: `targetWorkflows[${index}]`, message: 'ワークフロー名は空文字列にできません' });
+                }
+            });
+        }
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * GitHub設定のバリデーション
+ * @param {Partial<GitHubSettings>} settings - バリデーション対象のGitHub設定
+ * @returns {ValidationResult} バリデーション結果
+ */
+function validateGitHubSettings(settings) {
+    const errors = [];
+
+    // 必須フィールドの検証
+    if (typeof settings.autoSyncEnabled !== 'boolean') {
+        errors.push({ field: 'autoSyncEnabled', message: '自動同期有効フラグはboolean値である必要があります' });
+    }
+
+    if (!Number.isInteger(settings.autoSyncInterval) || settings.autoSyncInterval <= 0) {
+        errors.push({ field: 'autoSyncInterval', message: '自動同期間隔は正の整数である必要があります' });
+    }
+
+    if (!Number.isInteger(settings.maxRetries) || settings.maxRetries < 0) {
+        errors.push({ field: 'maxRetries', message: '最大再試行回数は0以上の整数である必要があります' });
+    }
+
+    if (typeof settings.retryDelay !== 'number' || settings.retryDelay < 0) {
+        errors.push({ field: 'retryDelay', message: '再試行遅延時間は0以上の数値である必要があります' });
+    }
+
+    // オプションフィールドの検証
+    if (settings.accessToken !== undefined && (typeof settings.accessToken !== 'string' || settings.accessToken.trim() === '')) {
+        errors.push({ field: 'accessToken', message: 'アクセストークンは空文字列にできません' });
+    }
+
+    if (settings.lastSyncAt !== undefined && (typeof settings.lastSyncAt !== 'string' || settings.lastSyncAt.trim() === '')) {
+        errors.push({ field: 'lastSyncAt', message: '最終同期日時は空文字列にできません' });
+    }
+
+    if (settings.rateLimitRemaining !== undefined && (!Number.isInteger(settings.rateLimitRemaining) || settings.rateLimitRemaining < 0)) {
+        errors.push({ field: 'rateLimitRemaining', message: '残りレート制限数は0以上の整数である必要があります' });
+    }
+
+    if (settings.rateLimitResetAt !== undefined && (typeof settings.rateLimitResetAt !== 'string' || settings.rateLimitResetAt.trim() === '')) {
+        errors.push({ field: 'rateLimitResetAt', message: 'レート制限リセット日時は空文字列にできません' });
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
+ * 同期記録のバリデーション
+ * @param {Partial<SyncRecord>} record - バリデーション対象の同期記録
+ * @returns {ValidationResult} バリデーション結果
+ */
+function validateSyncRecord(record) {
+    const errors = [];
+
+    // 必須フィールドの検証
+    if (!record.projectId || typeof record.projectId !== 'string' || record.projectId.trim() === '') {
+        errors.push({ field: 'projectId', message: 'プロジェクトIDは必須です' });
+    }
+
+    if (!record.projectName || typeof record.projectName !== 'string' || record.projectName.trim() === '') {
+        errors.push({ field: 'projectName', message: 'プロジェクト名は必須です' });
+    }
+
+    if (!record.status || !CLASSIFICATION_SYSTEM.SYNC_STATUS.includes(record.status)) {
+        errors.push({ field: 'status', message: '同期ステータスは必須です（success、failure、partial のいずれか）' });
+    }
+
+    if (!Number.isInteger(record.newCIResults) || record.newCIResults < 0) {
+        errors.push({ field: 'newCIResults', message: '新規CI結果数は0以上の整数である必要があります' });
+    }
+
+    if (!Number.isInteger(record.updatedCIResults) || record.updatedCIResults < 0) {
+        errors.push({ field: 'updatedCIResults', message: '更新CI結果数は0以上の整数である必要があります' });
+    }
+
+    if (!Array.isArray(record.errors)) {
+        errors.push({ field: 'errors', message: 'エラーメッセージは配列である必要があります' });
+    } else {
+        record.errors.forEach((error, index) => {
+            if (typeof error !== 'string') {
+                errors.push({ field: `errors[${index}]`, message: 'エラーメッセージは文字列である必要があります' });
+            }
+        });
+    }
+
+    if (!record.repositoryUrl || typeof record.repositoryUrl !== 'string' || record.repositoryUrl.trim() === '') {
+        errors.push({ field: 'repositoryUrl', message: 'リポジトリURLは必須です' });
+    }
+
+    if (!Number.isInteger(record.workflowRunsProcessed) || record.workflowRunsProcessed < 0) {
+        errors.push({ field: 'workflowRunsProcessed', message: '処理したワークフロー実行数は0以上の整数である必要があります' });
+    }
+
+    if (!Number.isInteger(record.apiRequestsUsed) || record.apiRequestsUsed < 0) {
+        errors.push({ field: 'apiRequestsUsed', message: '使用したAPIリクエスト数は0以上の整数である必要があります' });
+    }
+
+    if (!Number.isInteger(record.durationMs) || record.durationMs < 0) {
+        errors.push({ field: 'durationMs', message: '処理時間は0以上の整数である必要があります' });
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+/**
  * 分類値の検証
  * @param {string} field - フィールド名
  * @param {string} value - 検証する値
@@ -429,6 +733,14 @@ function validateClassificationValue(field, value) {
             return CLASSIFICATION_SYSTEM.CI_STATUS.includes(value);
         case 'sbomStatus':
             return CLASSIFICATION_SYSTEM.SBOM_STATUS.includes(value);
+        case 'ciSource':
+            return CLASSIFICATION_SYSTEM.CI_SOURCE.includes(value);
+        case 'syncStatus':
+            return CLASSIFICATION_SYSTEM.SYNC_STATUS.includes(value);
+        case 'workflowStatus':
+            return CLASSIFICATION_SYSTEM.WORKFLOW_STATUS.includes(value);
+        case 'workflowConclusion':
+            return CLASSIFICATION_SYSTEM.WORKFLOW_CONCLUSION.includes(value);
         case 'framework':
             return ClassificationSystemEnforcer.isValidFramework(value);
         default:
@@ -591,6 +903,74 @@ class ClassificationSystemEnforcer {
     }
 
     /**
+     * CI ソース値のリストを取得
+     * @returns {string[]} CI ソース値の配列
+     */
+    static getCISourceValues() {
+        return [...CLASSIFICATION_SYSTEM.CI_SOURCE];
+    }
+
+    /**
+     * 同期ステータス値のリストを取得
+     * @returns {string[]} 同期ステータス値の配列
+     */
+    static getSyncStatusValues() {
+        return [...CLASSIFICATION_SYSTEM.SYNC_STATUS];
+    }
+
+    /**
+     * ワークフローステータス値のリストを取得
+     * @returns {string[]} ワークフローステータス値の配列
+     */
+    static getWorkflowStatusValues() {
+        return [...CLASSIFICATION_SYSTEM.WORKFLOW_STATUS];
+    }
+
+    /**
+     * ワークフロー結果値のリストを取得
+     * @returns {string[]} ワークフロー結果値の配列
+     */
+    static getWorkflowConclusionValues() {
+        return [...CLASSIFICATION_SYSTEM.WORKFLOW_CONCLUSION];
+    }
+
+    /**
+     * CI ソース値の有効性を検証
+     * @param {string} value - 検証する値
+     * @returns {boolean} 有効かどうか
+     */
+    static isValidCISource(value) {
+        return CLASSIFICATION_SYSTEM.CI_SOURCE.includes(value);
+    }
+
+    /**
+     * 同期ステータス値の有効性を検証
+     * @param {string} value - 検証する値
+     * @returns {boolean} 有効かどうか
+     */
+    static isValidSyncStatus(value) {
+        return CLASSIFICATION_SYSTEM.SYNC_STATUS.includes(value);
+    }
+
+    /**
+     * ワークフローステータス値の有効性を検証
+     * @param {string} value - 検証する値
+     * @returns {boolean} 有効かどうか
+     */
+    static isValidWorkflowStatus(value) {
+        return CLASSIFICATION_SYSTEM.WORKFLOW_STATUS.includes(value);
+    }
+
+    /**
+     * ワークフロー結果値の有効性を検証
+     * @param {string} value - 検証する値
+     * @returns {boolean} 有効かどうか
+     */
+    static isValidWorkflowConclusion(value) {
+        return CLASSIFICATION_SYSTEM.WORKFLOW_CONCLUSION.includes(value);
+    }
+
+    /**
      * すべての分類システムの値を取得
      * @returns {Object} 分類システムの全値
      */
@@ -603,7 +983,11 @@ class ClassificationSystemEnforcer {
             severity: this.getSeverityValues(),
             status: this.getStatusValues(),
             ciStatus: this.getCIStatusValues(),
-            sbomStatus: this.getSBOMStatusValues()
+            sbomStatus: this.getSBOMStatusValues(),
+            ciSource: this.getCISourceValues(),
+            syncStatus: this.getSyncStatusValues(),
+            workflowStatus: this.getWorkflowStatusValues(),
+            workflowConclusion: this.getWorkflowConclusionValues()
         };
     }
 }
@@ -676,6 +1060,33 @@ class ValidationEngine {
             isValid: allErrors.length === 0,
             errors: allErrors
         };
+    }
+
+    /**
+     * GitHubリポジトリ情報のバリデーション
+     * @param {Partial<GitHubRepository>} repository - バリデーション対象のGitHubリポジトリ情報
+     * @returns {ValidationResult} バリデーション結果
+     */
+    static validateGitHubRepository(repository) {
+        return validateGitHubRepository(repository);
+    }
+
+    /**
+     * GitHub設定のバリデーション
+     * @param {Partial<GitHubSettings>} settings - バリデーション対象のGitHub設定
+     * @returns {ValidationResult} バリデーション結果
+     */
+    static validateGitHubSettings(settings) {
+        return validateGitHubSettings(settings);
+    }
+
+    /**
+     * 同期記録のバリデーション
+     * @param {Partial<SyncRecord>} record - バリデーション対象の同期記録
+     * @returns {ValidationResult} バリデーション結果
+     */
+    static validateSyncRecord(record) {
+        return validateSyncRecord(record);
     }
 
     /**
@@ -2119,6 +2530,34 @@ function displayProjectInfo(project) {
             return;
         }
         
+        // GitHubリポジトリ情報のHTML生成
+        let githubRepoHTML = '';
+        if (project.githubRepository && project.githubRepository.url) {
+            const repo = project.githubRepository;
+            const syncStatus = repo.syncEnabled ? '有効' : '無効';
+            const lastSync = repo.lastSyncAt ? formatDateTime(repo.lastSyncAt) : '未同期';
+            
+            githubRepoHTML = `
+                <div class="info-item github-repo-info">
+                    <label>GitHubリポジトリ:</label>
+                    <div class="github-repo-details">
+                        <a href="${escapeHtml(repo.url)}" target="_blank" rel="noopener noreferrer" class="repo-link">
+                            ${escapeHtml(repo.url)}
+                        </a>
+                        <div class="repo-status">
+                            <span class="sync-status ${repo.syncEnabled ? 'enabled' : 'disabled'}">
+                                自動同期: ${syncStatus}
+                            </span>
+                            <span class="last-sync">最終同期: ${lastSync}</span>
+                        </div>
+                        <button id="remove-github-repo-btn" class="btn btn-sm btn-secondary" title="リポジトリ関連付けを解除">
+                            関連付け解除
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
         // プロジェクト情報のHTMLを生成
         const projectInfoHTML = `
             <div class="project-info-grid">
@@ -2146,10 +2585,17 @@ function displayProjectInfo(project) {
                     <label>更新日時:</label>
                     <span class="info-value">${formatDateTime(project.updatedAt)}</span>
                 </div>
+                ${githubRepoHTML}
             </div>
         `;
         
         projectInfoContainer.innerHTML = projectInfoHTML;
+        
+        // リポジトリ関連付け解除ボタンのイベントリスナーを追加
+        const removeRepoBtn = document.getElementById('remove-github-repo-btn');
+        if (removeRepoBtn) {
+            removeRepoBtn.addEventListener('click', () => handleRemoveGitHubRepository(project.id));
+        }
         
     } catch (error) {
         console.error('プロジェクト情報の表示中にエラーが発生:', error);
@@ -2315,6 +2761,9 @@ function loadCIResultsTab(projectId) {
             return;
         }
         
+        // ワークフローフィルターを初期化
+        initializeWorkflowFilter(projectId);
+        
         if (ciResults.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -2429,6 +2878,7 @@ function generateCIResultsTable(ciResults) {
             <thead>
                 <tr>
                     <th>実行日時</th>
+                    <th>ソース</th>
                     <th>ステータス</th>
                     <th>Lint結果</th>
                     <th>契約テスト結果</th>
@@ -2442,9 +2892,13 @@ function generateCIResultsTable(ciResults) {
     `;
     
     sortedResults.forEach(result => {
+        // ソース情報の生成
+        const sourceInfo = formatCIResultSource(result);
+        
         tableHTML += `
             <tr>
                 <td>${formatDateTime(result.timestamp)}</td>
+                <td>${sourceInfo}</td>
                 <td><span class="ci-status ci-status-${result.status}">${result.status === 'pass' ? '成功' : '失敗'}</span></td>
                 <td>${formatLintResult(result.lintResult)}</td>
                 <td>${formatContractTestResult(result.contractTestResult)}</td>
@@ -3762,6 +4216,17 @@ function setupProjectDetailEventListeners(projectId) {
             });
         }
         
+        // 手動同期ボタン
+        const manualSyncBtn = document.getElementById('manual-sync-btn');
+        if (manualSyncBtn) {
+            manualSyncBtn.addEventListener('click', () => {
+                handleManualSync(projectId);
+            });
+        }
+        
+        // 手動同期ボタンの表示/非表示を更新
+        updateManualSyncButtonVisibility(projectId);
+        
         // CI結果追加ボタン
         const addCIResultBtn = document.getElementById('add-ci-result-btn');
         if (addCIResultBtn) {
@@ -4220,6 +4685,9 @@ function showEditProjectModal(projectId) {
         if (dateInput) dateInput.value = project.date;
         if (assigneeInput) assigneeInput.value = project.assignee || '';
         
+        // GitHubリポジトリ情報を設定
+        populateGitHubRepositoryFields(project);
+        
         // モーダルを表示
         showModal('edit-project-modal');
         
@@ -4280,6 +4748,44 @@ function handleEditProjectSubmit(event, projectId) {
         if (!updateData.date) {
             ErrorHandler.showErrorMessage('日付を選択してください');
             return;
+        }
+        
+        // GitHubリポジトリ情報の処理
+        const githubRepoUrl = formData.get('githubRepoUrl')?.trim();
+        const githubSyncEnabled = formData.get('githubSyncEnabled') === 'on';
+        
+        if (githubRepoUrl) {
+            // GitHubリポジトリURLの検証
+            if (!validateGitHubRepositoryUrl(githubRepoUrl)) {
+                ErrorHandler.showErrorMessage('有効なGitHubリポジトリURLを入力してください (例: https://github.com/owner/repo)');
+                return;
+            }
+            
+            // リポジトリ情報を解析
+            const repoInfo = parseGitHubRepositoryUrl(githubRepoUrl);
+            if (!repoInfo) {
+                ErrorHandler.showErrorMessage('GitHubリポジトリURLの解析に失敗しました');
+                return;
+            }
+            
+            // 既存のプロジェクトを取得
+            const existingProject = DataManager.getProjectById(projectId);
+            
+            updateData.githubRepository = {
+                owner: repoInfo.owner,
+                repo: repoInfo.repo,
+                url: githubRepoUrl,
+                syncEnabled: githubSyncEnabled,
+                lastSyncAt: existingProject?.githubRepository?.lastSyncAt || null,
+                targetWorkflows: existingProject?.githubRepository?.targetWorkflows || []
+            };
+        } else {
+            // URLが空の場合は、既存のリポジトリ情報を保持するか削除
+            const existingProject = DataManager.getProjectById(projectId);
+            if (existingProject?.githubRepository) {
+                // 既存のリポジトリ情報がある場合は削除
+                updateData.githubRepository = null;
+            }
         }
         
         // プロジェクトを更新
@@ -7982,3 +8488,820 @@ function generateEnhancedVirtualScrollTable(sortedFindings) {
 }
 
 // 仮想スクロール機能の強化（メイン初期化に統合）
+
+// ========================================
+// GitHub統合機能の初期化
+// ========================================
+
+/**
+ * GitHub統合機能を既存のアプリケーションに統合
+ */
+function integrateGitHubFeatures() {
+    // GitHub統合機能が利用可能かチェック
+    if (typeof GitHubIntegrationClient === 'undefined' || 
+        typeof GitHubSettingsManager === 'undefined') {
+        console.log('GitHub integration features not available');
+        return;
+    }
+
+    // 既存のDataManagerクラスを拡張してGitHub統合機能を追加
+    if (typeof DataManager !== 'undefined') {
+        // プロジェクトデータモデルにGitHubリポジトリ情報を追加するためのヘルパー関数
+        DataManager.prototype.setProjectGitHubRepository = function(projectId, repositoryInfo) {
+            const project = this.getProjectById(projectId);
+            if (!project) {
+                throw new Error('プロジェクトが見つかりません');
+            }
+
+            const updatedProject = {
+                ...project,
+                githubRepository: repositoryInfo,
+                updatedAt: new Date().toISOString()
+            };
+
+            this.updateProject(projectId, updatedProject);
+        };
+
+        // GitHubリポジトリ情報を取得するヘルパー関数
+        DataManager.prototype.getProjectGitHubRepository = function(projectId) {
+            const project = this.getProjectById(projectId);
+            return project ? project.githubRepository : null;
+        };
+
+        // GitHub統合によるCI結果を追加するヘルパー関数
+        DataManager.prototype.createGitHubCIResult = function(projectId, ciResultData) {
+            // GitHub統合特有のフィールドを含むCI結果を作成
+            const ciResult = {
+                ...ciResultData,
+                timestamp: ciResultData.timestamp || new Date().toISOString(),
+                source: 'github'
+            };
+
+            return this.createCIResult(projectId, ciResult);
+        };
+    }
+
+    console.log('GitHub integration features integrated successfully');
+}
+
+/**
+ * プロジェクト詳細ページでのGitHub統合UI要素を追加
+ */
+function addGitHubIntegrationUI() {
+    // プロジェクト詳細ページでのみ実行
+    if (!window.location.pathname.includes('project-detail.html')) {
+        return;
+    }
+
+    // プロジェクト編集フォームにGitHubリポジトリURL入力フィールドを追加
+    const projectForm = document.getElementById('edit-project-form');
+    if (projectForm) {
+        const frameworkGroup = projectForm.querySelector('.form-group:has(#edit-project-framework)');
+        if (frameworkGroup) {
+            const githubGroup = document.createElement('div');
+            githubGroup.className = 'form-group';
+            githubGroup.innerHTML = `
+                <label for="edit-project-github-repo" class="form-label">
+                    GitHubリポジトリURL（オプション）
+                </label>
+                <input type="url" 
+                       id="edit-project-github-repo" 
+                       class="form-input" 
+                       placeholder="https://github.com/owner/repo"
+                       aria-describedby="github-repo-help">
+                <small id="github-repo-help" class="form-help">
+                    CI結果の自動取得を有効にするには、GitHubリポジトリのURLを入力してください
+                </small>
+            `;
+            
+            frameworkGroup.insertAdjacentElement('afterend', githubGroup);
+        }
+    }
+
+    // CI結果タブに手動同期ボタンを追加
+    const ciResultsTab = document.querySelector('[data-tab="ci-results"]');
+    if (ciResultsTab) {
+        const tabContent = document.getElementById('ci-results');
+        if (tabContent) {
+            const syncButtonContainer = document.createElement('div');
+            syncButtonContainer.className = 'github-sync-controls';
+            syncButtonContainer.style.marginBottom = '1rem';
+            syncButtonContainer.innerHTML = `
+                <button id="manual-sync-btn" class="btn btn-secondary" style="display: none;">
+                    <span class="sync-icon">🔄</span>
+                    GitHub同期
+                </button>
+                <div id="sync-status-indicator" class="sync-status-indicator" style="display: none;">
+                    <!-- 同期状態がここに表示される -->
+                </div>
+            `;
+            
+            tabContent.insertBefore(syncButtonContainer, tabContent.firstChild);
+        }
+    }
+
+    // 設定ページへのリンクを追加
+    const headerNav = document.querySelector('.desktop-nav');
+    if (headerNav) {
+        const settingsLink = document.createElement('a');
+        settingsLink.href = 'settings.html';
+        settingsLink.className = 'btn btn-secondary';
+        settingsLink.innerHTML = `
+            <span class="nav-icon">⚙️</span>
+            設定
+        `;
+        headerNav.appendChild(settingsLink);
+    }
+}
+
+/**
+ * メインページでのGitHub統合UI要素を追加
+ */
+function addMainPageGitHubUI() {
+    // メインページ（index.html）でのみ実行
+    if (window.location.pathname.includes('project-detail.html') || 
+        window.location.pathname.includes('settings.html')) {
+        return;
+    }
+
+    // ヘッダーナビゲーションに設定ページへのリンクを追加
+    const headerNav = document.querySelector('.desktop-nav');
+    if (headerNav) {
+        const settingsLink = document.createElement('a');
+        settingsLink.href = 'settings.html';
+        settingsLink.className = 'btn btn-secondary';
+        settingsLink.innerHTML = `
+            <span class="nav-icon">⚙️</span>
+            設定
+        `;
+        
+        // エクスポートボタンの前に挿入
+        const exportBtn = headerNav.querySelector('#export-data-btn');
+        if (exportBtn) {
+            headerNav.insertBefore(settingsLink, exportBtn);
+        } else {
+            headerNav.appendChild(settingsLink);
+        }
+    }
+
+    // モバイルナビゲーションにも設定リンクを追加
+    const mobileNav = document.querySelector('.mobile-nav-content');
+    if (mobileNav) {
+        const mobileSettingsLink = document.createElement('a');
+        mobileSettingsLink.href = 'settings.html';
+        mobileSettingsLink.className = 'mobile-nav-item btn-mobile btn-secondary-mobile';
+        mobileSettingsLink.innerHTML = `
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">設定</span>
+        `;
+        
+        // エクスポートボタンの前に挿入
+        const mobileExportBtn = mobileNav.querySelector('#mobile-export-data-btn');
+        if (mobileExportBtn) {
+            mobileNav.insertBefore(mobileSettingsLink, mobileExportBtn);
+        } else {
+            mobileNav.appendChild(mobileSettingsLink);
+        }
+    }
+}
+
+// GitHub統合機能の初期化を既存の初期化プロセスに統合
+document.addEventListener('DOMContentLoaded', function() {
+    // 既存の初期化が完了した後にGitHub統合機能を初期化
+    setTimeout(() => {
+        integrateGitHubFeatures();
+        addGitHubIntegrationUI();
+        addMainPageGitHubUI();
+    }, 100);
+});
+
+// ========================================
+// GitHubリポジトリ関連付け機能
+// ========================================
+
+/**
+ * GitHubリポジトリURLを検証
+ * @param {string} url - 検証するURL
+ * @returns {boolean} 有効なGitHubリポジトリURLかどうか
+ */
+function validateGitHubRepositoryUrl(url) {
+    if (!url) return false;
+    
+    // GitHubリポジトリURLのパターン
+    const githubUrlPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+\/?$/;
+    return githubUrlPattern.test(url);
+}
+
+/**
+ * GitHubリポジトリURLを解析
+ * @param {string} url - 解析するURL
+ * @returns {Object|null} { owner, repo } または null
+ */
+function parseGitHubRepositoryUrl(url) {
+    if (!url) return null;
+    
+    const match = url.match(/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)/);
+    if (!match) return null;
+    
+    return {
+        owner: match[1],
+        repo: match[2].replace(/\.git$/, '') // .git拡張子を削除
+    };
+}
+
+/**
+ * GitHubリポジトリ関連付けを解除
+ * @param {string} projectId - プロジェクトID
+ */
+function handleRemoveGitHubRepository(projectId) {
+    try {
+        const project = DataManager.getProjectById(projectId);
+        if (!project) {
+            ErrorHandler.showErrorMessage('プロジェクトが見つかりません');
+            return;
+        }
+        
+        // 確認ダイアログを表示
+        if (!confirm('GitHubリポジトリの関連付けを解除しますか？\n自動同期も無効になります。')) {
+            return;
+        }
+        
+        // GitHubリポジトリ情報を削除
+        const updateData = {
+            githubRepository: null
+        };
+        
+        const success = DataManager.updateProject(projectId, updateData);
+        
+        if (success) {
+            ErrorHandler.showSuccessMessage('GitHubリポジトリの関連付けを解除しました');
+            
+            // プロジェクト情報を再表示
+            const updatedProject = DataManager.getProjectById(projectId);
+            if (updatedProject) {
+                displayProjectInfo(updatedProject);
+            }
+        } else {
+            ErrorHandler.showErrorMessage('関連付けの解除に失敗しました');
+        }
+        
+    } catch (error) {
+        console.error('GitHubリポジトリ関連付け解除でエラーが発生:', error);
+        ErrorHandler.handleUnexpectedError(error, 'GitHubリポジトリ関連付け解除');
+    }
+}
+
+/**
+ * プロジェクト編集モーダルにGitHubリポジトリ情報を設定
+ * @param {Object} project - プロジェクトオブジェクト
+ */
+function populateGitHubRepositoryFields(project) {
+    const githubRepoUrlInput = document.getElementById('edit-github-repo-url');
+    const githubSyncEnabledCheckbox = document.getElementById('edit-github-sync-enabled');
+    
+    if (githubRepoUrlInput && project.githubRepository) {
+        githubRepoUrlInput.value = project.githubRepository.url || '';
+    } else if (githubRepoUrlInput) {
+        githubRepoUrlInput.value = '';
+    }
+    
+    if (githubSyncEnabledCheckbox && project.githubRepository) {
+        githubSyncEnabledCheckbox.checked = project.githubRepository.syncEnabled || false;
+    } else if (githubSyncEnabledCheckbox) {
+        githubSyncEnabledCheckbox.checked = false;
+    }
+}
+
+/**
+ * CI結果のソース情報をフォーマット
+ * @param {Object} result - CI結果オブジェクト
+ * @returns {string} フォーマットされたHTML
+ */
+function formatCIResultSource(result) {
+    const source = result.source || 'manual';
+    
+    if (source === 'github' && result.githubData) {
+        const workflowName = result.githubData.workflowName || 'Unknown Workflow';
+        return `
+            <div class="ci-result-source-info">
+                <span class="ci-result-source github">
+                    <span class="source-icon">🔗</span>
+                    GitHub
+                </span>
+                <div class="ci-result-workflow" title="${escapeHtml(workflowName)}">
+                    ${escapeHtml(workflowName)}
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <span class="ci-result-source manual">
+                <span class="source-icon">✏️</span>
+                手動
+            </span>
+        `;
+    }
+}
+
+/**
+ * 手動同期ボタンの表示/非表示を制御
+ * @param {string} projectId - プロジェクトID
+ */
+function updateManualSyncButtonVisibility(projectId) {
+    const project = DataManager.getProjectById(projectId);
+    const manualSyncBtn = document.getElementById('manual-sync-btn');
+    
+    if (!manualSyncBtn) return;
+    
+    // GitHubリポジトリが関連付けられている場合のみ表示
+    if (project && project.githubRepository && project.githubRepository.url) {
+        manualSyncBtn.style.display = 'inline-flex';
+    } else {
+        manualSyncBtn.style.display = 'none';
+    }
+}
+
+/**
+ * 同期ステータスインジケーターを表示
+ * @param {string} status - ステータス ('syncing', 'success', 'error', 'partial', 'warning')
+ * @param {string} message - 表示メッセージ
+ * @param {Object} [details] - 追加の詳細情報
+ */
+function showSyncStatusIndicator(status, message, details = null) {
+    const indicator = document.getElementById('sync-status-indicator');
+    if (!indicator) return;
+    
+    indicator.className = `sync-status-indicator ${status}`;
+    indicator.style.display = 'flex';
+    
+    let icon = '';
+    let iconClass = '';
+    switch (status) {
+        case 'syncing':
+            icon = '🔄';
+            iconClass = 'spinning';
+            break;
+        case 'success':
+            icon = '✅';
+            break;
+        case 'error':
+            icon = '❌';
+            break;
+        case 'partial':
+            icon = '⚠️';
+            break;
+        case 'warning':
+            icon = '⚠️';
+            break;
+    }
+    
+    let detailsHtml = '';
+    if (details) {
+        if (details.processed !== undefined && details.total !== undefined) {
+            detailsHtml = `<span class="status-progress">(${details.processed}/${details.total})</span>`;
+        } else if (details.count !== undefined) {
+            detailsHtml = `<span class="status-count">${details.count}件</span>`;
+        }
+    }
+    
+    indicator.innerHTML = `
+        <span class="status-icon ${iconClass}">${icon}</span>
+        <span class="status-message">${escapeHtml(message)}</span>
+        ${detailsHtml}
+    `;
+    
+    // 成功、エラー、警告の場合は7秒後に非表示
+    if (status === 'success' || status === 'error' || status === 'partial' || status === 'warning') {
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 7000);
+    }
+}
+
+/**
+ * 同期ステータスインジケーターを非表示
+ */
+function hideSyncStatusIndicator() {
+    const indicator = document.getElementById('sync-status-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
+
+/**
+ * 手動同期を実行
+ * @param {string} projectId - プロジェクトID
+ */
+async function handleManualSync(projectId) {
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    try {
+        const project = DataManager.getProjectById(projectId);
+        if (!project || !project.githubRepository) {
+            ErrorHandler.showErrorMessage('GitHubリポジトリが関連付けられていません');
+            return;
+        }
+        
+        // 同期中の表示
+        showSyncStatusIndicator('syncing', 'GitHub ActionsのCI結果を取得中...');
+        
+        // 手動同期ボタンを無効化
+        const manualSyncBtn = document.getElementById('manual-sync-btn');
+        if (manualSyncBtn) {
+            manualSyncBtn.disabled = true;
+            manualSyncBtn.innerHTML = '<span class="sync-icon spinning">🔄</span> 同期中...';
+        }
+        
+        // AutoSyncSchedulerを使用して同期を実行
+        if (typeof AutoSyncScheduler !== 'undefined') {
+            const scheduler = AutoSyncScheduler.getInstance();
+            
+            // 進行状況の更新
+            showSyncStatusIndicator('syncing', 'ワークフロー実行を取得中...');
+            
+            const result = await scheduler.syncProject(projectId);
+            
+            if (result.success) {
+                // 成功時の詳細表示
+                const message = result.newCIResults > 0 
+                    ? `${result.newCIResults}件の新しいCI結果を取得しました（${result.apiRequestsUsed}回のAPI呼び出し）`
+                    : '新しいCI結果はありませんでした';
+                    
+                showSyncStatusIndicator('success', message);
+                
+                // CI結果タブを再読み込み
+                loadCIResultsTab(projectId);
+                
+                // プロジェクト情報を再表示（最終同期時刻を更新）
+                const updatedProject = DataManager.getProjectById(projectId);
+                if (updatedProject) {
+                    displayProjectInfo(updatedProject);
+                }
+                
+                // ワークフローフィルターを更新
+                initializeWorkflowFilter(projectId);
+                
+            } else if (result.partialSuccess) {
+                // 部分的成功時の処理
+                handleSyncError(result, projectId, retryCount, maxRetries);
+            } else {
+                // 完全失敗時の処理
+                handleSyncError(result.error || result, projectId, retryCount, maxRetries);
+            }
+        } else {
+            showSyncStatusIndicator('error', 'GitHub統合機能が利用できません');
+        }
+        
+    } catch (error) {
+        console.error('手動同期でエラーが発生:', error);
+        handleSyncError(error.message || '同期中にエラーが発生しました', projectId, retryCount, maxRetries);
+    } finally {
+        // 手動同期ボタンを有効化
+        const manualSyncBtn = document.getElementById('manual-sync-btn');
+        if (manualSyncBtn) {
+            manualSyncBtn.disabled = false;
+            manualSyncBtn.innerHTML = '<span class="sync-icon">🔄</span> GitHub同期';
+        }
+    }
+}
+
+/**
+ * 同期エラーを処理
+ * @param {string|Object} errorData - エラーメッセージまたは結果オブジェクト
+ * @param {string} projectId - プロジェクトID
+ * @param {number} retryCount - 現在の再試行回数
+ * @param {number} maxRetries - 最大再試行回数
+ */
+function handleSyncError(errorData, projectId, retryCount, maxRetries) {
+    let errorMessage = '';
+    let isPartialSuccess = false;
+    let newCIResults = 0;
+    
+    // エラーデータの型を判定
+    if (typeof errorData === 'object' && errorData !== null) {
+        errorMessage = errorData.error || errorData.message || '同期中にエラーが発生しました';
+        isPartialSuccess = errorData.partialSuccess || false;
+        newCIResults = errorData.newCIResults || 0;
+    } else {
+        errorMessage = errorData || '同期中にエラーが発生しました';
+    }
+    
+    // エラーの種類を判定
+    const isNetworkError = errorMessage.includes('ネットワーク') || 
+                          errorMessage.includes('Network') ||
+                          errorMessage.includes('接続');
+    const isRateLimitError = errorMessage.includes('レート制限') || 
+                            errorMessage.includes('rate limit');
+    const isAuthError = errorMessage.includes('認証') || 
+                       errorMessage.includes('authentication') ||
+                       errorMessage.includes('401');
+    const isNotFoundError = errorMessage.includes('見つかりません') || 
+                           errorMessage.includes('404');
+    
+    // エラーメッセージを構築
+    let displayMessage = errorMessage;
+    let showRetryButton = false;
+    let statusType = 'error';
+    
+    // 部分的成功の場合
+    if (isPartialSuccess && newCIResults > 0) {
+        displayMessage = `${newCIResults}件のCI結果を取得しましたが、一部のワークフローでエラーが発生しました: ${errorMessage}`;
+        statusType = 'partial';
+        showRetryButton = false; // 部分的成功の場合は再試行ボタンを表示しない
+    } else if (isNetworkError) {
+        displayMessage = 'ネットワーク接続エラーが発生しました。接続を確認してください。';
+        showRetryButton = retryCount < maxRetries;
+    } else if (isRateLimitError) {
+        displayMessage = 'GitHub APIのレート制限に達しました。しばらく待ってから再試行してください。';
+        showRetryButton = false;
+    } else if (isAuthError) {
+        displayMessage = 'GitHub認証エラーが発生しました。Personal Access Tokenを確認してください。';
+        showRetryButton = false;
+    } else if (isNotFoundError) {
+        displayMessage = 'リポジトリが見つかりません。リポジトリURLを確認してください。';
+        showRetryButton = false;
+    } else {
+        showRetryButton = retryCount < maxRetries;
+    }
+    
+    // エラー表示
+    showSyncStatusIndicator(statusType, displayMessage);
+    
+    // 部分的成功の場合はCI結果タブを更新
+    if (isPartialSuccess && newCIResults > 0) {
+        loadCIResultsTab(projectId);
+        
+        // プロジェクト情報を再表示
+        const updatedProject = DataManager.getProjectById(projectId);
+        if (updatedProject) {
+            displayProjectInfo(updatedProject);
+        }
+        
+        // ワークフローフィルターを更新
+        initializeWorkflowFilter(projectId);
+    }
+    
+    // 再試行ボタンを表示
+    if (showRetryButton) {
+        showSyncRetryButton(projectId, retryCount + 1, maxRetries);
+    }
+    
+    // エラーログを記録
+    logSyncError(projectId, errorMessage, isPartialSuccess, newCIResults);
+}
+
+/**
+ * 同期エラーをログに記録
+ * @param {string} projectId - プロジェクトID
+ * @param {string} errorMessage - エラーメッセージ
+ * @param {boolean} isPartialSuccess - 部分的成功かどうか
+ * @param {number} newCIResults - 取得したCI結果数
+ */
+function logSyncError(projectId, errorMessage, isPartialSuccess, newCIResults) {
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        projectId: projectId,
+        errorMessage: errorMessage,
+        isPartialSuccess: isPartialSuccess,
+        newCIResults: newCIResults,
+        userAgent: navigator.userAgent,
+        online: navigator.onLine
+    };
+    
+    console.error('Sync error:', logEntry);
+    
+    // エラーログをlocalStorageに保存（最新100件まで）
+    try {
+        const errorLogKey = 'spec-tracking-site:syncErrorLog';
+        const existingLog = JSON.parse(localStorage.getItem(errorLogKey) || '[]');
+        existingLog.unshift(logEntry);
+        
+        // 最新100件のみ保持
+        if (existingLog.length > 100) {
+            existingLog.splice(100);
+        }
+        
+        localStorage.setItem(errorLogKey, JSON.stringify(existingLog));
+    } catch (error) {
+        console.warn('Failed to save error log:', error);
+    }
+}
+
+/**
+ * 同期再試行ボタンを表示
+ * @param {string} projectId - プロジェクトID
+ * @param {number} retryCount - 再試行回数
+ * @param {number} maxRetries - 最大再試行回数
+ */
+function showSyncRetryButton(projectId, retryCount, maxRetries) {
+    const indicator = document.getElementById('sync-status-indicator');
+    if (!indicator) return;
+    
+    // 再試行ボタンを追加
+    const retryButton = document.createElement('button');
+    retryButton.className = 'btn btn-sm btn-secondary';
+    retryButton.style.marginLeft = '10px';
+    retryButton.textContent = `再試行 (${retryCount}/${maxRetries})`;
+    retryButton.onclick = async () => {
+        retryButton.disabled = true;
+        retryButton.textContent = '再試行中...';
+        
+        try {
+            await handleManualSyncWithRetry(projectId, retryCount, maxRetries);
+        } catch (error) {
+            console.error('再試行でエラーが発生:', error);
+        }
+    };
+    
+    indicator.appendChild(retryButton);
+}
+
+/**
+ * 再試行付き手動同期を実行
+ * @param {string} projectId - プロジェクトID
+ * @param {number} retryCount - 現在の再試行回数
+ * @param {number} maxRetries - 最大再試行回数
+ */
+async function handleManualSyncWithRetry(projectId, retryCount, maxRetries) {
+    try {
+        const project = DataManager.getProjectById(projectId);
+        if (!project || !project.githubRepository) {
+            ErrorHandler.showErrorMessage('GitHubリポジトリが関連付けられていません');
+            return;
+        }
+        
+        // 同期中の表示
+        showSyncStatusIndicator('syncing', `再試行中... (${retryCount}/${maxRetries})`);
+        
+        // 手動同期ボタンを無効化
+        const manualSyncBtn = document.getElementById('manual-sync-btn');
+        if (manualSyncBtn) {
+            manualSyncBtn.disabled = true;
+            manualSyncBtn.innerHTML = '<span class="sync-icon spinning">🔄</span> 再試行中...';
+        }
+        
+        // 指数バックオフで待機
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // AutoSyncSchedulerを使用して同期を実行
+        if (typeof AutoSyncScheduler !== 'undefined') {
+            const scheduler = AutoSyncScheduler.getInstance();
+            const result = await scheduler.syncProject(projectId);
+            
+            if (result.success) {
+                const message = result.newCIResults > 0 
+                    ? `${result.newCIResults}件の新しいCI結果を取得しました`
+                    : '新しいCI結果はありませんでした';
+                    
+                showSyncStatusIndicator('success', message);
+                
+                // CI結果タブを再読み込み
+                loadCIResultsTab(projectId);
+                
+                // プロジェクト情報を再表示
+                const updatedProject = DataManager.getProjectById(projectId);
+                if (updatedProject) {
+                    displayProjectInfo(updatedProject);
+                }
+                
+                // ワークフローフィルターを更新
+                initializeWorkflowFilter(projectId);
+                
+            } else if (result.partialSuccess) {
+                // 部分的成功時の処理
+                handleSyncError(result, projectId, retryCount, maxRetries);
+            } else {
+                // 完全失敗時の処理
+                handleSyncError(result.error || result, projectId, retryCount, maxRetries);
+            }
+        }
+        
+    } catch (error) {
+        console.error('再試行でエラーが発生:', error);
+        handleSyncError(error.message || '再試行中にエラーが発生しました', projectId, retryCount, maxRetries);
+    } finally {
+        // 手動同期ボタンを有効化
+        const manualSyncBtn = document.getElementById('manual-sync-btn');
+        if (manualSyncBtn) {
+            manualSyncBtn.disabled = false;
+            manualSyncBtn.innerHTML = '<span class="sync-icon">🔄</span> GitHub同期';
+        }
+    }
+}
+
+// ========================================
+// ワークフローフィルタリング機能
+// ========================================
+
+/**
+ * ワークフローフィルターを初期化
+ * @param {string} projectId - プロジェクトID
+ */
+function initializeWorkflowFilter(projectId) {
+    const ciResults = DataManager.getCIResultsByProjectId(projectId);
+    const filterContainer = document.getElementById('workflow-filter-container');
+    const filterSelect = document.getElementById('workflow-filter-select');
+    
+    if (!filterContainer || !filterSelect) return;
+    
+    // GitHubソースのCI結果からワークフロー名を抽出
+    const workflows = new Set();
+    ciResults.forEach(result => {
+        if (result.source === 'github' && result.githubData && result.githubData.workflowName) {
+            workflows.add(result.githubData.workflowName);
+        }
+    });
+    
+    // ワークフローが存在する場合のみフィルターを表示
+    if (workflows.size > 0) {
+        filterContainer.style.display = 'block';
+        
+        // フィルター選択肢を生成
+        filterSelect.innerHTML = '<option value="">すべてのワークフロー</option>';
+        Array.from(workflows).sort().forEach(workflow => {
+            const option = document.createElement('option');
+            option.value = workflow;
+            option.textContent = workflow;
+            filterSelect.appendChild(option);
+        });
+        
+        // フィルター変更イベントリスナー
+        filterSelect.addEventListener('change', () => {
+            applyWorkflowFilter(projectId, filterSelect.value);
+        });
+    } else {
+        filterContainer.style.display = 'none';
+    }
+}
+
+/**
+ * ワークフローフィルターを適用
+ * @param {string} projectId - プロジェクトID
+ * @param {string} workflowName - フィルターするワークフロー名（空文字列の場合はすべて表示）
+ */
+function applyWorkflowFilter(projectId, workflowName) {
+    const ciResults = DataManager.getCIResultsByProjectId(projectId);
+    
+    // フィルター適用
+    let filteredResults = ciResults;
+    if (workflowName) {
+        filteredResults = ciResults.filter(result => {
+            if (result.source === 'github' && result.githubData) {
+                return result.githubData.workflowName === workflowName;
+            }
+            // 手動入力のCI結果は常に表示
+            return result.source === 'manual';
+        });
+    }
+    
+    // フィルター適用後のCI結果を表示
+    const container = document.getElementById('ci-results-container');
+    if (!container) return;
+    
+    if (filteredResults.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>フィルター条件に一致するCI結果がありません</p>
+            </div>
+        `;
+    } else {
+        const tableHTML = generateCIResultsTable(filteredResults);
+        container.innerHTML = tableHTML;
+    }
+}
+
+/**
+ * プロジェクトのGitHubリポジトリ設定で対象ワークフローを更新
+ * @param {string} projectId - プロジェクトID
+ * @param {string[]} targetWorkflows - 対象ワークフロー名の配列
+ */
+function updateTargetWorkflows(projectId, targetWorkflows) {
+    try {
+        const project = DataManager.getProjectById(projectId);
+        if (!project || !project.githubRepository) {
+            ErrorHandler.showErrorMessage('GitHubリポジトリが関連付けられていません');
+            return;
+        }
+        
+        const updateData = {
+            githubRepository: {
+                ...project.githubRepository,
+                targetWorkflows: targetWorkflows
+            }
+        };
+        
+        const success = DataManager.updateProject(projectId, updateData);
+        
+        if (success) {
+            ErrorHandler.showSuccessMessage('対象ワークフローを更新しました');
+        } else {
+            ErrorHandler.showErrorMessage('対象ワークフローの更新に失敗しました');
+        }
+        
+    } catch (error) {
+        console.error('対象ワークフロー更新でエラーが発生:', error);
+        ErrorHandler.handleUnexpectedError(error, '対象ワークフロー更新');
+    }
+}
