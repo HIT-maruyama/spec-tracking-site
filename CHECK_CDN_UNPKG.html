@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octokit.js CDN 読み込みテスト (unpkg)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Octokit.js CDN 読み込みテスト (unpkg)</h1>
+    
+    <div class="info test-result">
+        このページは unpkg CDN を使用して Octokit.js が読み込まれるかテストします。
+    </div>
+
+    <button onclick="runTest()">テスト実行</button>
+    <button onclick="location.reload()">ページ再読み込み</button>
+
+    <div id="results"></div>
+
+    <!-- Octokit.js CDN - unpkg版 -->
+    <script src="https://unpkg.com/@octokit/core@5.0.2/dist-bundle/index.js"></script>
+    <script src="https://unpkg.com/@octokit/plugin-rest-endpoint-methods@10.0.1/dist-bundle/index.js"></script>
+    <script src="https://unpkg.com/@octokit/plugin-paginate-rest@9.1.5/dist-bundle/index.js"></script>
+    <script src="https://unpkg.com/@octokit/plugin-throttling@8.1.3/dist-bundle/index.js"></script>
+    <script src="https://unpkg.com/@octokit/plugin-retry@6.0.1/dist-bundle/index.js"></script>
+
+    <script>
+        function runTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>テスト結果 (unpkg CDN)</h2>';
+
+            const tests = [
+                { name: 'OctokitCore', check: () => typeof window.OctokitCore !== 'undefined' },
+                { name: 'OctokitRestEndpointMethods', check: () => typeof window.OctokitRestEndpointMethods !== 'undefined' },
+                { name: 'OctokitPaginateRest', check: () => typeof window.OctokitPaginateRest !== 'undefined' },
+                { name: 'OctokitPluginThrottling', check: () => typeof window.OctokitPluginThrottling !== 'undefined' },
+                { name: 'OctokitPluginRetry', check: () => typeof window.OctokitPluginRetry !== 'undefined' }
+            ];
+
+            let allPassed = true;
+
+            tests.forEach(test => {
+                const passed = test.check();
+                allPassed = allPassed && passed;
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `test-result ${passed ? 'success' : 'error'}`;
+                resultDiv.innerHTML = `
+                    ${passed ? '✅' : '❌'} ${test.name}: ${passed ? '読み込み成功' : '読み込み失敗'}
+                `;
+                resultsDiv.appendChild(resultDiv);
+            });
+
+            // 総合結果
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `test-result ${allPassed ? 'success' : 'error'}`;
+            summaryDiv.innerHTML = `
+                <h3>${allPassed ? '✅ すべてのテストに合格しました！' : '❌ 一部のテストが失敗しました'}</h3>
+            `;
+            resultsDiv.appendChild(summaryDiv);
+
+            // グローバル変数の詳細
+            const detailsDiv = document.createElement('div');
+            detailsDiv.innerHTML = '<h3>グローバル変数の詳細</h3>';
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify({
+                OctokitCore: typeof window.OctokitCore,
+                OctokitRestEndpointMethods: typeof window.OctokitRestEndpointMethods,
+                OctokitPaginateRest: typeof window.OctokitPaginateRest,
+                OctokitPluginThrottling: typeof window.OctokitPluginThrottling,
+                OctokitPluginRetry: typeof window.OctokitPluginRetry,
+                allOctokitGlobals: Object.keys(window).filter(k => k.includes('Octokit'))
+            }, null, 2);
+            detailsDiv.appendChild(pre);
+            resultsDiv.appendChild(detailsDiv);
+
+            // Octokit 初期化テスト
+            if (allPassed) {
+                try {
+                    const { Octokit: CoreOctokit } = window.OctokitCore;
+                    const { restEndpointMethods } = window.OctokitRestEndpointMethods;
+                    const { paginateRest } = window.OctokitPaginateRest;
+                    const { throttling } = window.OctokitPluginThrottling;
+                    const { retry } = window.OctokitPluginRetry;
+                    
+                    const OctokitWithPlugins = CoreOctokit.plugin(
+                        restEndpointMethods,
+                        paginateRest,
+                        throttling,
+                        retry
+                    );
+                    
+                    const octokit = new OctokitWithPlugins();
+                    
+                    const initDiv = document.createElement('div');
+                    initDiv.className = 'test-result success';
+                    initDiv.innerHTML = '✅ Octokit インスタンスの作成に成功しました！';
+                    resultsDiv.appendChild(initDiv);
+                    
+                    console.log('Octokit instance created successfully:', octokit);
+                } catch (error) {
+                    const initDiv = document.createElement('div');
+                    initDiv.className = 'test-result error';
+                    initDiv.innerHTML = `❌ Octokit インスタンスの作成に失敗: ${error.message}`;
+                    resultsDiv.appendChild(initDiv);
+                    
+                    console.error('Failed to create Octokit instance:', error);
+                }
+            }
+        }
+
+        // ページ読み込み時に自動実行
+        window.addEventListener('load', () => {
+            console.log('Page loaded, running test...');
+            setTimeout(runTest, 500); // CDN読み込み完了を待つ
+        });
+    </script>
+</body>
+</html>
