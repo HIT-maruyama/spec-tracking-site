@@ -228,6 +228,33 @@ X-GitHub-Api-Version: 2022-11-28
 
 ---
 
-**修正日**: 2024年12月17日  
-**バージョン**: 1.1.0  
+## 🔄 追加修正（2024年12月18日）
+
+### 修正内容
+
+1. **index.html の Octokit.js CDN 修正**
+   - Skypack CDN → jsDelivr CDN に変更
+   - プロジェクト一覧ページでも Octokit.js が正常に読み込まれるように修正
+
+2. **project-detail.html の Octokit.js CDN 修正**
+   - Skypack CDN → jsDelivr CDN に変更
+   - プロジェクト詳細ページでも Octokit.js が正常に読み込まれるように修正
+
+3. **github-error-handler.js の重複定義解消**
+   - `GitHubAPIError` クラスの重複定義を削除
+   - `github-integration.js` で定義されたクラスを使用するように変更
+   - `Uncaught SyntaxError: Identifier 'GitHubAPIError' has already been declared` エラーを解消
+
+### 解決された問題
+
+- ✅ プロジェクト一覧ページでの `Octokit.js is not loaded` エラー
+- ✅ プロジェクト詳細ページでの `Octokit.js is not loaded` エラー
+- ✅ `GitHubAPIError` 重複宣言エラー
+- ✅ すべてのページで Octokit.js が正常に動作
+
+---
+
+**初回修正日**: 2024年12月17日  
+**追加修正日**: 2024年12月18日  
+**バージョン**: 1.2.0  
 **ステータス**: ✅ 修正完了
