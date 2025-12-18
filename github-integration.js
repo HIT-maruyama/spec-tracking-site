@@ -113,24 +113,44 @@ class GitHubIntegrationClient {
      * 自動レート制限管理とエラーハンドリング設定を含む
      */
     initializeOctokit() {
-        // Octokit.jsがCDN経由で読み込まれていることを確認
-        if (typeof window.Octokit === 'undefined') {
+        // Octokit Core が読み込まれていることを確認
+        if (typeof window.OctokitCore === 'undefined' || typeof window.OctokitCore.Octokit === 'undefined') {
             console.error('Octokit.js is not loaded. Please check the CDN link.');
+            console.log('Available globals:', Object.keys(window).filter(k => k.includes('Octokit')));
             return;
         }
 
-        const { Octokit } = window.Octokit;
-        
-        // RateLimitManagerからthrottling設定を取得
-        const throttleConfig = this.rateLimitManager.configureThrottling();
-        
-        this.octokit = new Octokit({
-            throttle: throttleConfig,
-            retry: {
-                doNotRetry: ["400", "401", "403", "404", "422"],
-                retries: 3
-            }
-        });
+        try {
+            // プラグインを組み合わせてOctokitを構築
+            const { Octokit: CoreOctokit } = window.OctokitCore;
+            const { restEndpointMethods } = window.OctokitRestEndpointMethods;
+            const { paginateRest } = window.OctokitPaginateRest;
+            const { throttling } = window.OctokitPluginThrottling;
+            const { retry } = window.OctokitPluginRetry;
+            
+            // プラグインを適用
+            const OctokitWithPlugins = CoreOctokit.plugin(
+                restEndpointMethods,
+                paginateRest,
+                throttling,
+                retry
+            );
+            
+            // RateLimitManagerからthrottling設定を取得
+            const throttleConfig = this.rateLimitManager.configureThrottling();
+            
+            this.octokit = new OctokitWithPlugins({
+                throttle: throttleConfig,
+                retry: {
+                    doNotRetry: ["400", "401", "403", "404", "422"],
+                    retries: 3
+                }
+            });
+            
+            console.log('Octokit initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize Octokit:', error);
+        }
     }
 
     /**
@@ -142,22 +162,47 @@ class GitHubIntegrationClient {
             this.initializeOctokit();
         }
 
-        const { Octokit } = window.Octokit;
-        
-        // RateLimitManagerからthrottling設定を取得
-        const throttleConfig = this.rateLimitManager.configureThrottling();
-        
-        // 認証状態をRateLimitManagerに通知
-        this.rateLimitManager.setAuthenticationStatus(!!token);
-        
-        this.octokit = new Octokit({
-            auth: token,
-            throttle: throttleConfig,
-            retry: {
-                doNotRetry: ["400", "401", "403", "404", "422"],
-                retries: 3
+        try {
+            // Octokit Core が読み込まれていることを確認
+            if (typeof window.OctokitCore === 'undefined' || typeof window.OctokitCore.Octokit === 'undefined') {
+                throw new Error('Octokit.js is not loaded. Please check the CDN link.');
             }
-        });
+
+            // プラグインを組み合わせてOctokitを構築
+            const { Octokit: CoreOctokit } = window.OctokitCore;
+            const { restEndpointMethods } = window.OctokitRestEndpointMethods;
+            const { paginateRest } = window.OctokitPaginateRest;
+            const { throttling } = window.OctokitPluginThrottling;
+            const { retry } = window.OctokitPluginRetry;
+            
+            // プラグインを適用
+            const OctokitWithPlugins = CoreOctokit.plugin(
+                restEndpointMethods,
+                paginateRest,
+                throttling,
+                retry
+            );
+            
+            // RateLimitManagerからthrottling設定を取得
+            const throttleConfig = this.rateLimitManager.configureThrottling();
+            
+            // 認証状態をRateLimitManagerに通知
+            this.rateLimitManager.setAuthenticationStatus(!!token);
+            
+            this.octokit = new OctokitWithPlugins({
+                auth: token,
+                throttle: throttleConfig,
+                retry: {
+                    doNotRetry: ["400", "401", "403", "404", "422"],
+                    retries: 3
+                }
+            });
+            
+            console.log('Octokit initialized with token');
+        } catch (error) {
+            console.error('Failed to set access token:', error);
+            throw error;
+        }
     }
 
     /**
