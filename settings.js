@@ -214,6 +214,7 @@ class SettingsPageController {
      */
     async saveToken() {
         const tokenInput = document.getElementById('github-token');
+        const saveTokenBtn = document.getElementById('save-token-btn');
 
         if (!tokenInput || !tokenInput.value.trim()) {
             this.showMessage('Personal Access Tokenを入力してください', 'error');
@@ -223,17 +224,45 @@ class SettingsPageController {
         try {
             const token = tokenInput.value.trim();
 
+            // ボタンを無効化
+            if (saveTokenBtn) {
+                saveTokenBtn.disabled = true;
+                saveTokenBtn.textContent = '保存中...';
+            }
+
+            console.log('Starting token save process...');
+            console.log('Token length:', token.length);
+            console.log('Token prefix:', token.substring(0, 10));
+
+            // 暗号化機能のサポート確認
+            if (typeof TokenEncryption === 'undefined') {
+                throw new Error('暗号化機能が読み込まれていません。ページを再読み込みしてください。');
+            }
+
+            if (!TokenEncryption.isSupported()) {
+                throw new Error('このブラウザは暗号化機能をサポートしていません。HTTPSまたはlocalhostでアクセスしてください。');
+            }
+
+            console.log('Encryption supported, testing connection...');
+
             // まず接続テストを実行
             this.githubClient.setAccessToken(token);
             const isConnected = await this.githubClient.testConnection();
 
             if (!isConnected) {
-                this.showMessage('無効なトークンです。接続テストを実行してください', 'error');
-                return;
+                throw new Error('GitHub APIへの接続に失敗しました。トークンの権限を確認してください。');
             }
 
+            console.log('Connection test passed, encrypting token...');
+
             // トークンを暗号化して保存
-            await this.settingsManager.setAccessToken(token);
+            const success = await this.settingsManager.setAccessToken(token);
+
+            if (!success) {
+                throw new Error('トークンの保存に失敗しました。LocalStorageの容量を確認してください。');
+            }
+
+            console.log('Token saved successfully');
 
             // UIを更新
             tokenInput.value = '';
@@ -245,7 +274,40 @@ class SettingsPageController {
 
         } catch (error) {
             console.error('Failed to save token:', error);
-            this.showMessage('トークンの保存に失敗しました: ' + error.message, 'error');
+            console.error('Error stack:', error.stack);
+            
+            // より詳細なエラーメッセージを表示
+            let errorMessage = 'トークンの保存に失敗しました';
+            
+            if (error.message) {
+                errorMessage += ': ' + error.message;
+            }
+            
+            // 特定のエラーに対する追加のヒント
+            if (error.message && error.message.includes('crypto')) {
+                errorMessage += '\n\nヒント: HTTPSまたはlocalhostでアクセスしてください。';
+            } else if (error.message && error.message.includes('QuotaExceeded')) {
+                errorMessage += '\n\nヒント: ブラウザのLocalStorageをクリアしてください。';
+            } else if (error.message && error.message.includes('Network')) {
+                errorMessage += '\n\nヒント: インターネット接続を確認してください。';
+            }
+            
+            this.showMessage(errorMessage, 'error');
+            
+            // デバッグ情報をコンソールに出力
+            console.log('=== デバッグ情報 ===');
+            console.log('crypto.subtle available:', typeof crypto.subtle !== 'undefined');
+            console.log('HTTPS:', window.location.protocol === 'https:');
+            console.log('localhost:', window.location.hostname === 'localhost');
+            console.log('TokenEncryption available:', typeof TokenEncryption !== 'undefined');
+            console.log('localStorage available:', typeof localStorage !== 'undefined');
+            
+        } finally {
+            // ボタンを再有効化
+            if (saveTokenBtn) {
+                saveTokenBtn.disabled = false;
+                saveTokenBtn.textContent = '保存';
+            }
         }
     }
 

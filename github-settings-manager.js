@@ -100,22 +100,56 @@ class GitHubSettingsManager {
      */
     async setAccessToken(token) {
         try {
+            console.log('GitHubSettingsManager.setAccessToken called');
+            
             if (!token || typeof token !== 'string' || token.trim() === '') {
                 console.error('有効なアクセストークンを指定してください');
-                return false;
+                throw new Error('有効なアクセストークンを指定してください');
             }
 
+            // TokenEncryptionが利用可能か確認
+            if (typeof TokenEncryption === 'undefined') {
+                console.error('TokenEncryption is not defined');
+                throw new Error('暗号化機能が読み込まれていません');
+            }
+
+            // 暗号化機能がサポートされているか確認
+            if (!TokenEncryption.isSupported()) {
+                console.error('Encryption not supported');
+                throw new Error('このブラウザは暗号化機能をサポートしていません');
+            }
+
+            console.log('Encrypting token...');
+            
             // トークンを暗号化
             const encryptedToken = await TokenEncryption.encrypt(token.trim());
+            
+            console.log('Token encrypted, length:', encryptedToken.length);
+            console.log('Updating settings...');
 
             // 設定を更新
-            return this.updateSettings({
+            const success = this.updateSettings({
                 accessToken: encryptedToken
             });
+            
+            console.log('Settings updated:', success);
+            
+            if (!success) {
+                throw new Error('設定の保存に失敗しました');
+            }
+            
+            return true;
+            
         } catch (error) {
             console.error('アクセストークンの設定に失敗:', error);
-            ErrorHandler.handleStorageError(error);
-            return false;
+            console.error('Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            
+            // エラーをそのまま投げる（呼び出し元で処理）
+            throw error;
         }
     }
 
