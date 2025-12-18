@@ -1,19 +1,9 @@
 /**
  * GitHub APIエラーハンドリング
  * APIエラー、レート制限、接続エラーの処理とユーザー通知を提供
+ * 
+ * 注意: GitHubAPIError クラスは github-integration.js で定義されています
  */
-
-/**
- * GitHub APIエラークラス
- */
-class GitHubAPIError extends Error {
-    constructor(message, status, details = '') {
-        super(message);
-        this.name = 'GitHubAPIError';
-        this.status = status;
-        this.details = details;
-    }
-}
 
 /**
  * GitHubエラーハンドラークラス
@@ -448,7 +438,7 @@ class GitHubErrorHandler {
 }
 
 // グローバルに公開
+// 注意: GitHubAPIError は github-integration.js で既にグローバルに公開されています
 if (typeof window !== 'undefined') {
-    window.GitHubAPIError = GitHubAPIError;
     window.GitHubErrorHandler = GitHubErrorHandler;
 }
