@@ -31,9 +31,10 @@ https://github.com/settings/tokens/new
 
 | 項目 | 設定値 |
 |------|--------|
-| **Note** | `Spec Tracking Site - CI Integration` |
+| **Token name** | `Spec Tracking Site - CI Integration` |
 | **Expiration** | `90 days`（推奨） |
-| **Scopes** | ✅ `repo:status`<br>✅ `repo_deployment`<br>✅ `public_repo` |
+| **Repository access** | `Only select repositories`<br>→ 監視したいリポジトリを選択 |
+| **Permissions** | **Repository permissions:**<br>✅ Actions: `Read-only`<br>✅ Commit statuses: `Read-only`<br>✅ Contents: `Read-only`<br>✅ Metadata: `Read-only` (自動) |
 
 ### 4. トークンを生成してコピー
 
