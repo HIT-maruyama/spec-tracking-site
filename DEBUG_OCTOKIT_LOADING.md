@@ -2,7 +2,31 @@
 
 ## 🔍 問題の診断
 
-現在、以下のエラーが発生しています:
+### トラッキング防止エラー
+
+以下のエラーが発生する場合があります:
+```
+Tracking Prevention blocked access to storage for https://unpkg.com/@octokit/core
+```
+
+これは、ブラウザのトラッキング防止機能（特にFirefoxやSafari）がunpkg.comからのスクリプト読み込みをブロックしていることを示しています。
+
+### 解決策: jsDelivr CDNへの変更
+
+unpkg.comの代わりに、トラッキング防止に強いjsDelivr CDNを使用するように変更しました:
+
+```html
+<!-- jsDelivr CDN (トラッキング防止に強い) -->
+<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+```
+
+### その他の読み込みエラー
+
+以下のエラーが発生する場合もあります:
 ```
 Octokit.js is not loaded. Please check the CDN link.
 Available globals: Array(0)
@@ -34,12 +58,17 @@ Available globals: Array(0)
 4. 以下のスクリプトが **200 OK** で読み込まれているか確認:
 
 ```
-✅ @octokit/core@5.0.2/dist/bundle.min.js
-✅ @octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js
-✅ @octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js
-✅ @octokit/plugin-throttling@8.1.3/dist/bundle.min.js
-✅ @octokit/plugin-retry@6.0.1/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js
 ```
+
+**トラッキング防止エラーが表示される場合**:
+- ブラウザのトラッキング防止設定を確認
+- Firefoxの場合: `about:preferences#privacy` で「強化型トラッキング防止機能」を「標準」に設定
+- Safariの場合: 設定 > プライバシー > 「サイト越えトラッキングを防ぐ」を一時的に無効化
 
 ### ステップ3: コンソールでグローバル変数を確認
 
@@ -117,12 +146,25 @@ Retry: object
 ブラウザで以下の URL を直接開いて、スクリプトが表示されるか確認:
 
 ```
-https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
+https://cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js
 ```
 
 **期待される結果**: JavaScript コードが表示される
 
 **もしエラーが表示される場合**: CDN へのアクセスがブロックされています
+
+### 方法4: ブラウザのトラッキング防止設定を確認
+
+**Firefox の場合**:
+1. `about:preferences#privacy` にアクセス
+2. 「強化型トラッキング防止機能」を確認
+3. 「カスタム」の場合、「トラッカー」のみにチェックを入れる
+4. または、このサイトのみ例外として追加
+
+**Safari の場合**:
+1. 設定 > プライバシー
+2. 「サイト越えトラッキングを防ぐ」を確認
+3. 必要に応じて一時的に無効化
 
 ---
 
