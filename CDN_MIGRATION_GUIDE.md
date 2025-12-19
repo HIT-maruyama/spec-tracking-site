@@ -23,7 +23,7 @@ jsDelivrは以下の理由で選択されました：
 
 ### 変更内容
 
-#### 変更前（unpkg.com）
+#### 変更前（unpkg.com - 複数ファイル）
 ```html
 <script src="https://unpkg.com/@octokit/core"></script>
 <script src="https://unpkg.com/@octokit/plugin-rest-endpoint-methods"></script>
@@ -32,26 +32,25 @@ jsDelivrは以下の理由で選択されました：
 <script src="https://unpkg.com/@octokit/plugin-retry"></script>
 ```
 
-#### 変更後（jsDelivr - UMDバンドル版）
+#### 変更後（jsDelivr - 統合版、単一ファイル）
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/octokit@3.1.2/dist/octokit.min.js" crossorigin="anonymous"></script>
 ```
 
 ### 主な変更点
 
 1. **ベースURL**: `unpkg.com` → `cdn.jsdelivr.net/npm`
-2. **バージョン指定**: 明示的なバージョン番号を追加（例: `@5.0.2`）
-3. **パス指定**: `/dist/bundle.min.js`（UMD形式）を使用
-4. **CORS属性**: `crossorigin="anonymous"` を追加してセキュリティを強化
+2. **パッケージ**: 個別パッケージ（`@octokit/core`等）→ 統合パッケージ（`octokit`）
+3. **ファイル数**: 5ファイル → 1ファイル（統合版）
+4. **バージョン指定**: 明示的なバージョン番号（`@3.1.2`）
+5. **CORS属性**: `crossorigin="anonymous"` を追加してセキュリティを強化
 
-**重要な注意点**:
-- `/dist/bundle.min.js` はUMD（Universal Module Definition）形式で、ブラウザで直接`<script>`タグで読み込めます
-- `/dist-web/index.js` はES Modules形式で、`type="module"`なしでは使用できません
-- ブラウザ互換性のため、必ずUMDバンドル版（`/dist/bundle.min.js`）を使用してください
+**統合版の利点**:
+- **シンプル**: 単一ファイルで全機能を提供
+- **メンテナンス性**: バージョン管理が容易
+- **パフォーマンス**: HTTPリクエスト数が削減
+- **互換性**: すべてのプラグインが統合済み
+- **UMD形式**: ブラウザで直接`<script>`タグで読み込める
 
 ## 影響を受けるファイル
 
@@ -81,11 +80,7 @@ jsDelivrは以下の理由で選択されました：
 4. 以下のスクリプトが **200 OK** で読み込まれることを確認：
 
 ```
-✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/octokit@3.1.2/dist/octokit.min.js
 ```
 
 ### 3. コンソールでグローバル変数を確認

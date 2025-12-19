@@ -13,18 +13,18 @@ Tracking Prevention blocked access to storage for https://unpkg.com/@octokit/cor
 
 ### 解決策: jsDelivr CDNへの変更
 
-unpkg.comの代わりに、トラッキング防止に強いjsDelivr CDNのUMDバンドル版を使用するように変更しました:
+unpkg.comの代わりに、トラッキング防止に強いjsDelivr CDNの統合版パッケージを使用するように変更しました:
 
 ```html
-<!-- jsDelivr CDN (UMDバンドル版、ブラウザ対応) -->
-<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
+<!-- jsDelivr CDN (統合版、ブラウザ対応) -->
+<script src="https://cdn.jsdelivr.net/npm/octokit@3.1.2/dist/octokit.min.js" crossorigin="anonymous"></script>
 ```
 
-**重要**: `/dist/bundle.min.js`（UMD形式）を使用することで、ブラウザで直接`<script>`タグで読み込めます。`/dist-web/index.js`（ES Modules形式）は使用できません。
+**利点**:
+- 単一ファイルで全機能を提供（プラグイン統合済み）
+- UMD形式でブラウザで直接`<script>`タグで読み込める
+- トラッキング防止に強い
+- メンテナンスが簡単
 
 ### その他の読み込みエラー
 
@@ -60,11 +60,7 @@ Available globals: Array(0)
 4. 以下のスクリプトが **200 OK** で読み込まれているか確認:
 
 ```
-✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/octokit@3.1.2/dist/octokit.min.js
 ```
 
 **トラッキング防止エラーが表示される場合**:
@@ -77,20 +73,14 @@ Available globals: Array(0)
 ページ読み込み後、コンソールで以下を実行:
 
 ```javascript
-console.log('OctokitCore:', typeof window.OctokitCore);
-console.log('RestEndpointMethods:', typeof window.OctokitRestEndpointMethods);
-console.log('PaginateRest:', typeof window.OctokitPaginateRest);
-console.log('Throttling:', typeof window.OctokitPluginThrottling);
-console.log('Retry:', typeof window.OctokitPluginRetry);
+console.log('Octokit:', typeof window.Octokit);
+console.log('Octokit.Octokit:', typeof window.Octokit?.Octokit);
 ```
 
 **期待される結果**:
 ```
-OctokitCore: object
-RestEndpointMethods: object
-PaginateRest: object
-Throttling: object
-Retry: object
+Octokit: object
+Octokit.Octokit: function
 ```
 
 **もし `undefined` が表示される場合**:
@@ -148,7 +138,7 @@ Retry: object
 ブラウザで以下の URL を直接開いて、スクリプトが表示されるか確認:
 
 ```
-https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
+https://cdn.jsdelivr.net/npm/octokit@3.1.2/dist/octokit.min.js
 ```
 
 **期待される結果**: JavaScript コードが表示される
@@ -192,11 +182,8 @@ OS:
 
 ### 3. コンソールのグローバル変数チェック結果
 ```
-OctokitCore: 
-RestEndpointMethods: 
-PaginateRest: 
-Throttling: 
-Retry: 
+Octokit: 
+Octokit.Octokit: 
 ```
 
 ### 4. その他のエラーメッセージ
