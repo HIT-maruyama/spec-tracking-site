@@ -32,21 +32,26 @@ jsDelivrは以下の理由で選択されました：
 <script src="https://unpkg.com/@octokit/plugin-retry"></script>
 ```
 
-#### 変更後（jsDelivr）
+#### 変更後（jsDelivr - UMDバンドル版）
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
 ```
 
 ### 主な変更点
 
 1. **ベースURL**: `unpkg.com` → `cdn.jsdelivr.net/npm`
-2. **バージョン指定**: 明示的なバージョン番号を追加（例: `@5.0.0`）
-3. **パス指定**: `/dist-web/index.js` を明示的に指定
+2. **バージョン指定**: 明示的なバージョン番号を追加（例: `@5.0.2`）
+3. **パス指定**: `/dist/bundle.min.js`（UMD形式）を使用
 4. **CORS属性**: `crossorigin="anonymous"` を追加してセキュリティを強化
+
+**重要な注意点**:
+- `/dist/bundle.min.js` はUMD（Universal Module Definition）形式で、ブラウザで直接`<script>`タグで読み込めます
+- `/dist-web/index.js` はES Modules形式で、`type="module"`なしでは使用できません
+- ブラウザ互換性のため、必ずUMDバンドル版（`/dist/bundle.min.js`）を使用してください
 
 ## 影響を受けるファイル
 
@@ -76,11 +81,11 @@ jsDelivrは以下の理由で選択されました：
 4. 以下のスクリプトが **200 OK** で読み込まれることを確認：
 
 ```
-✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js
 ```
 
 ### 3. コンソールでグローバル変数を確認

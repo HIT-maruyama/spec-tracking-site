@@ -13,16 +13,18 @@ Tracking Prevention blocked access to storage for https://unpkg.com/@octokit/cor
 
 ### 解決策: jsDelivr CDNへの変更
 
-unpkg.comの代わりに、トラッキング防止に強いjsDelivr CDNを使用するように変更しました:
+unpkg.comの代わりに、トラッキング防止に強いjsDelivr CDNのUMDバンドル版を使用するように変更しました:
 
 ```html
-<!-- jsDelivr CDN (トラッキング防止に強い) -->
-<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js" crossorigin="anonymous"></script>
+<!-- jsDelivr CDN (UMDバンドル版、ブラウザ対応) -->
+<script src="https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js" crossorigin="anonymous"></script>
 ```
+
+**重要**: `/dist/bundle.min.js`（UMD形式）を使用することで、ブラウザで直接`<script>`タグで読み込めます。`/dist-web/index.js`（ES Modules形式）は使用できません。
 
 ### その他の読み込みエラー
 
@@ -58,11 +60,11 @@ Available globals: Array(0)
 4. 以下のスクリプトが **200 OK** で読み込まれているか確認:
 
 ```
-✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.0.0/dist-web/index.js
-✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.0/dist-web/index.js
+✅ cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-rest-endpoint-methods@10.0.1/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-paginate-rest@9.1.5/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-throttling@8.1.3/dist/bundle.min.js
+✅ cdn.jsdelivr.net/npm/@octokit/plugin-retry@6.0.1/dist/bundle.min.js
 ```
 
 **トラッキング防止エラーが表示される場合**:
@@ -146,7 +148,7 @@ Retry: object
 ブラウザで以下の URL を直接開いて、スクリプトが表示されるか確認:
 
 ```
-https://cdn.jsdelivr.net/npm/@octokit/core@5.0.0/dist-web/index.js
+https://cdn.jsdelivr.net/npm/@octokit/core@5.0.2/dist/bundle.min.js
 ```
 
 **期待される結果**: JavaScript コードが表示される
